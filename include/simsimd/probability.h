@@ -25,6 +25,12 @@
 
 #include "types.h"
 
+#if defined(__has_feature)
+# if __has_feature(memory_sanitizer)
+#  include <sanitizer/msan_interface.h>
+# endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -525,7 +531,7 @@ SIMSIMD_INTERNAL __m512h _simsimd_log2_f16_sapphire(__m512h x) {
     return _mm512_add_ph(_mm512_mul_ph(p, _mm512_sub_ph(m, one)), e);
 }
 
-SIMSIMD_PUBLIC void __attribute__((no_sanitize("memory"))) simsimd_kl_f16_sapphire(simsimd_f16_t const *a, simsimd_f16_t const *b, simsimd_size_t n,
+SIMSIMD_PUBLIC void simsimd_kl_f16_sapphire(simsimd_f16_t const *a, simsimd_f16_t const *b, simsimd_size_t n,
                                             simsimd_distance_t *result) {
     __m512h sum_vec = _mm512_setzero_ph();
     __m512h epsilon_vec = _mm512_set1_ph((simsimd_f16_t)SIMSIMD_F16_DIVISION_EPSILON);
@@ -548,6 +554,13 @@ simsimd_kl_f16_sapphire_cycle:
     __m512h prod_vec = _mm512_mul_ph(a_vec, log_ratio_vec);
     sum_vec = _mm512_add_ph(sum_vec, prod_vec);
     if (n) goto simsimd_kl_f16_sapphire_cycle;
+
+    /// https://github.com/unum-cloud/usearch/issues/525
+#if defined(__has_feature)
+# if __has_feature(memory_sanitizer)
+    __msan_unpoison(&sum_vec, sizeof(__m512h));
+# endif
+#endif
 
     simsimd_f32_t log2_normalizer = 0.693147181f;
     *result = _mm512_reduce_add_ph(sum_vec) * log2_normalizer;
