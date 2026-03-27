@@ -42,6 +42,20 @@
 #if !defined(SIMSIMD_TARGET_SVE2) && (defined(__linux__) || defined(__FreeBSD__))
 #define SIMSIMD_TARGET_SVE2 1
 #endif
+/*  Under MemorySanitizer, disable all SVE targets: MSAN cannot instrument ARM SVE
+ *  predicated loads or vector arithmetic, causing false "use-of-uninitialized-value"
+ *  reports even on properly initialized data.  NEON/scalar fallbacks are tracked correctly.  */
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#undef SIMSIMD_TARGET_SVE
+#define SIMSIMD_TARGET_SVE 0
+#undef SIMSIMD_TARGET_SVE2
+#define SIMSIMD_TARGET_SVE2 0
+#define SIMSIMD_TARGET_SVE_F16 0
+#define SIMSIMD_TARGET_SVE_BF16 0
+#define SIMSIMD_TARGET_SVE_I8 0
+#endif
+#endif
 #if !defined(SIMSIMD_TARGET_HASWELL) && (defined(_MSC_VER) || defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__))
 #define SIMSIMD_TARGET_HASWELL 1
 #endif
