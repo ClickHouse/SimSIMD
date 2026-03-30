@@ -805,7 +805,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f32_sve(simsimd_f32_t const *a, simsimd_f32_t c
         svfloat32_t a_vec = svld1_f32(pg_vec, a + i);
         svfloat32_t b_vec = svld1_f32(pg_vec, b + i);
         svfloat32_t a_minus_b_vec = svsub_f32_x(pg_vec, a_vec, b_vec);
-        d2_vec = svmla_f32_x(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
+        d2_vec = svmla_f32_m(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
         i += svcntw();
     } while (i < n);
     simsimd_f32_t d2 = svaddv_f32(svptrue_b32(), d2_vec);
@@ -823,9 +823,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f32_sve(simsimd_f32_t const *a, simsimd_f32_t co
         svbool_t pg_vec = svwhilelt_b32((unsigned int)i, (unsigned int)n);
         svfloat32_t a_vec = svld1_f32(pg_vec, a + i);
         svfloat32_t b_vec = svld1_f32(pg_vec, b + i);
-        ab_vec = svmla_f32_x(pg_vec, ab_vec, a_vec, b_vec);
-        a2_vec = svmla_f32_x(pg_vec, a2_vec, a_vec, a_vec);
-        b2_vec = svmla_f32_x(pg_vec, b2_vec, b_vec, b_vec);
+        ab_vec = svmla_f32_m(pg_vec, ab_vec, a_vec, b_vec);
+        a2_vec = svmla_f32_m(pg_vec, a2_vec, a_vec, a_vec);
+        b2_vec = svmla_f32_m(pg_vec, b2_vec, b_vec, b_vec);
         i += svcntw();
     } while (i < n);
 
@@ -852,7 +852,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f64_sve(simsimd_f64_t const *a, simsimd_f64_t c
         svfloat64_t a_vec = svld1_f64(pg_vec, a + i);
         svfloat64_t b_vec = svld1_f64(pg_vec, b + i);
         svfloat64_t a_minus_b_vec = svsub_f64_x(pg_vec, a_vec, b_vec);
-        d2_vec = svmla_f64_x(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
+        d2_vec = svmla_f64_m(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
         i += svcntd();
     } while (i < n);
     simsimd_f64_t d2 = svaddv_f64(svptrue_b32(), d2_vec);
@@ -870,9 +870,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const *a, simsimd_f64_t co
         svbool_t pg_vec = svwhilelt_b64((unsigned int)i, (unsigned int)n);
         svfloat64_t a_vec = svld1_f64(pg_vec, a + i);
         svfloat64_t b_vec = svld1_f64(pg_vec, b + i);
-        ab_vec = svmla_f64_x(pg_vec, ab_vec, a_vec, b_vec);
-        a2_vec = svmla_f64_x(pg_vec, a2_vec, a_vec, a_vec);
-        b2_vec = svmla_f64_x(pg_vec, b2_vec, b_vec, b_vec);
+        ab_vec = svmla_f64_m(pg_vec, ab_vec, a_vec, b_vec);
+        a2_vec = svmla_f64_m(pg_vec, a2_vec, a_vec, a_vec);
+        b2_vec = svmla_f64_m(pg_vec, b2_vec, b_vec, b_vec);
         i += svcntd();
     } while (i < n);
 
@@ -910,7 +910,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f16_sve(simsimd_f16_t const *a_enum, simsimd_f1
         svfloat16_t a_vec = svld1_f16(pg_vec, a + i);
         svfloat16_t b_vec = svld1_f16(pg_vec, b + i);
         svfloat16_t a_minus_b_vec = svsub_f16_x(pg_vec, a_vec, b_vec);
-        d2_vec = svmla_f16_x(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
+        d2_vec = svmla_f16_m(pg_vec, d2_vec, a_minus_b_vec, a_minus_b_vec);
         i += svcnth();
     } while (i < n);
     simsimd_f16_for_arm_simd_t d2_f16 = svaddv_f16(svptrue_b16(), d2_vec);
@@ -930,9 +930,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f16_sve(simsimd_f16_t const *a_enum, simsimd_f16
         svbool_t pg_vec = svwhilelt_b16((unsigned int)i, (unsigned int)n);
         svfloat16_t a_vec = svld1_f16(pg_vec, a + i);
         svfloat16_t b_vec = svld1_f16(pg_vec, b + i);
-        ab_vec = svmla_f16_x(pg_vec, ab_vec, a_vec, b_vec);
-        a2_vec = svmla_f16_x(pg_vec, a2_vec, a_vec, a_vec);
-        b2_vec = svmla_f16_x(pg_vec, b2_vec, b_vec, b_vec);
+        ab_vec = svmla_f16_m(pg_vec, ab_vec, a_vec, b_vec);
+        a2_vec = svmla_f16_m(pg_vec, a2_vec, a_vec, a_vec);
+        b2_vec = svmla_f16_m(pg_vec, b2_vec, b_vec, b_vec);
         i += svcnth();
     } while (i < n);
 
@@ -981,8 +981,8 @@ SIMSIMD_PUBLIC void simsimd_l2sq_bf16_sve(simsimd_bf16_t const *a_enum, simsimd_
 
         svfloat32_t a_minus_b_low_vec = svsub_f32_x(pg_low_vec, a_low_vec, b_low_vec);
         svfloat32_t a_minus_b_high_vec = svsub_f32_x(pg_high_vec, a_high_vec, b_high_vec);
-        d2_low_vec = svmla_f32_x(pg_low_vec, d2_low_vec, a_minus_b_low_vec, a_minus_b_low_vec);
-        d2_high_vec = svmla_f32_x(pg_high_vec, d2_high_vec, a_minus_b_high_vec, a_minus_b_high_vec);
+        d2_low_vec = svmla_f32_m(pg_low_vec, d2_low_vec, a_minus_b_low_vec, a_minus_b_low_vec);
+        d2_high_vec = svmla_f32_m(pg_high_vec, d2_high_vec, a_minus_b_high_vec, a_minus_b_high_vec);
         i += svcnth();
     } while (i < n);
     simsimd_f32_t d2_low = svaddv_f32(svptrue_b32(), d2_low_vec);
