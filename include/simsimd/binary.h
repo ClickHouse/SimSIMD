@@ -5,15 +5,46 @@
  *  @date       July 1, 2023
  *
  *  Contains:
- *  - Hamming distance
- *  - Jaccard similarity (Tanimoto coefficient)
+ *  - Bit-level Hamming distance
+ *  - Bit-level Jaccard distance (Tanimoto coefficient)
+ *  - TODO: Hamming distance for integer vectors - `u32`
+ *  - TODO: Jaccard distance for integer vectors - `u32` and `u32u32` count-min-sketches from StringZilla
  *
  *  For hardware architectures:
  *  - Arm: NEON, SVE
  *  - x86: Haswell, Ice Lake
  *
+ *  The hardest part of optimizing binary similarity measures is the population count operation.
+ *  It's natively supported by almost every instruction set, but the throughput and latency can
+ *  be suboptimal. There are several ways to optimize this operation:
+ *
+ *  - Lookup tables, mostly using nibbles (4-bit lookups)
+ *  - Harley-Seal population counts: https://arxiv.org/pdf/1611.07612
+ *
+ *  On binary vectors, when computing Jaccard distance we can clearly see how the CPU struggles
+ *  to compute that many population counts. There are several instructions we should keep in mind
+ *  for future optimizations:
+ *
+ *  - `_mm512_popcnt_epi64` maps to `VPOPCNTQ (ZMM, K, ZMM)`:
+ *      - On Ice Lake: 3 cycles latency, ports: 1*p5
+ *      - On Genoa: 2 cycles latency, ports: 1*FP01
+ *  - `_mm512_shuffle_epi8` maps to `VPSHUFB (ZMM, ZMM, ZMM)`:
+ *      - On Ice Lake: 1 cycles latency, ports: 1*p5
+ *      - On Genoa: 2 cycles latency, ports: 1*FP12
+ *  - `_mm512_sad_epu8` maps to `VPSADBW (ZMM, ZMM, ZMM)`:
+ *      - On Ice Lake: 3 cycles latency, ports: 1*p5
+ *      - On Zen4: 3 cycles latency, ports: 1*FP01
+ *  - `_mm512_tertiarylogic_epi64` maps to `VPTERNLOGQ (ZMM, ZMM, ZMM, I8)`:
+ *      - On Ice Lake: 1 cycles latency, ports: 1*p05
+ *      - On Zen4: 1 cycles latency, ports: 1*FP0123
+ *  - `_mm512_gf2p8mul_epi8` maps to `VPGF2P8AFFINEQB (ZMM, ZMM, ZMM)`:
+ *      - On Ice Lake: 5 cycles latency, ports: 1*p0
+ *      - On Zen4: 3 cycles latency, ports: 1*FP01
+ *
  *  x86 intrinsics: https://www.intel.com/content/www/us/en/docs/intrinsics-guide/
  *  Arm intrinsics: https://developer.arm.com/architectures/instruction-sets/intrinsics/
+ *  SSE POPCOUNT experiments by Wojciech Muła: https://github.com/WojciechMula/sse-popcount
+ *  R&D progress tracker: https://github.com/ashvardanian/SimSIMD/pull/138
  */
 #ifndef SIMSIMD_BINARY_H
 #define SIMSIMD_BINARY_H
@@ -26,25 +57,25 @@ extern "C" {
 
 // clang-format off
 
-/*  Serial backends for bitsets. */
-SIMSIMD_PUBLIC void simsimd_hamming_b8_serial(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
-SIMSIMD_PUBLIC void simsimd_jaccard_b8_serial(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
+/*  Serial backends for bitsets and integers. */
+SIMSIMD_PUBLIC void simsimd_hamming_b8_serial(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_jaccard_b8_serial(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
 
-/*  Arm NEON backend for bitsets. */
-SIMSIMD_PUBLIC void simsimd_hamming_b8_neon(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
-SIMSIMD_PUBLIC void simsimd_jaccard_b8_neon(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
+/*  Arm NEON backend for bitsets and integers. */
+SIMSIMD_PUBLIC void simsimd_hamming_b8_neon(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_jaccard_b8_neon(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
 
-/*  Arm SVE backend for bitsets. */
-SIMSIMD_PUBLIC void simsimd_hamming_b8_sve(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
-SIMSIMD_PUBLIC void simsimd_jaccard_b8_sve(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
+/*  Arm SVE backend for bitsets and integers. */
+SIMSIMD_PUBLIC void simsimd_hamming_b8_sve(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_jaccard_b8_sve(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
 
-/*  x86 AVX2 backend for bitsets for Intel Haswell CPUs and newer, needs only POPCNT extensions. */
-SIMSIMD_PUBLIC void simsimd_hamming_b8_haswell(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
-SIMSIMD_PUBLIC void simsimd_jaccard_b8_haswell(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
+/*  x86 AVX2 backend for bitsets and integers for Intel Haswell CPUs and newer, needs only POPCNT extensions. */
+SIMSIMD_PUBLIC void simsimd_hamming_b8_haswell(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_jaccard_b8_haswell(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
 
-/*  x86 AVX512 backend for bitsets for Intel Ice Lake CPUs and newer, using VPOPCNTDQ extensions. */
-SIMSIMD_PUBLIC void simsimd_hamming_b8_ice(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
-SIMSIMD_PUBLIC void simsimd_jaccard_b8_ice(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* distance);
+/*  x86 AVX512 backend for bitsets and integers for Intel Ice Lake CPUs and newer, using VPOPCNTDQ extensions. */
+SIMSIMD_PUBLIC void simsimd_hamming_b8_ice(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_jaccard_b8_ice(simsimd_b8_t const* a, simsimd_b8_t const* b, simsimd_size_t n_words, simsimd_distance_t* result);
 // clang-format on
 
 SIMSIMD_PUBLIC unsigned char simsimd_popcount_b8(simsimd_b8_t x) {
@@ -62,14 +93,14 @@ SIMSIMD_PUBLIC unsigned char simsimd_popcount_b8(simsimd_b8_t x) {
 
 SIMSIMD_PUBLIC void simsimd_hamming_b8_serial(simsimd_b8_t const *a, simsimd_b8_t const *b, simsimd_size_t n_words,
                                               simsimd_distance_t *result) {
-    simsimd_i32_t differences = 0;
+    simsimd_u32_t differences = 0;
     for (simsimd_size_t i = 0; i != n_words; ++i) differences += simsimd_popcount_b8(a[i] ^ b[i]);
     *result = differences;
 }
 
 SIMSIMD_PUBLIC void simsimd_jaccard_b8_serial(simsimd_b8_t const *a, simsimd_b8_t const *b, simsimd_size_t n_words,
                                               simsimd_distance_t *result) {
-    simsimd_i32_t intersection = 0, union_ = 0;
+    simsimd_u32_t intersection = 0, union_ = 0;
     for (simsimd_size_t i = 0; i != n_words; ++i)
         intersection += simsimd_popcount_b8(a[i] & b[i]), union_ += simsimd_popcount_b8(a[i] | b[i]);
     *result = (union_ != 0) ? 1 - (simsimd_f64_t)intersection / (simsimd_f64_t)union_ : 1;
@@ -78,8 +109,8 @@ SIMSIMD_PUBLIC void simsimd_jaccard_b8_serial(simsimd_b8_t const *a, simsimd_b8_
 #if _SIMSIMD_TARGET_ARM
 #if SIMSIMD_TARGET_NEON
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.2-a+simd")
-#pragma clang attribute push(__attribute__((target("arch=armv8.2-a+simd"))), apply_to = function)
+#pragma GCC target("arch=armv8-a+simd")
+#pragma clang attribute push(__attribute__((target("arch=armv8-a+simd"))), apply_to = function)
 
 SIMSIMD_INTERNAL simsimd_u32_t _simsimd_reduce_u8x16_neon(uint8x16_t vec) {
     // Split the vector into two halves and widen to `uint16x8_t`
@@ -89,10 +120,10 @@ SIMSIMD_INTERNAL simsimd_u32_t _simsimd_reduce_u8x16_neon(uint8x16_t vec) {
     // Sum the widened halves
     uint16x8_t sum16 = vaddq_u16(low_half, high_half);
 
-    // Now reduce the `uint16x8_t` to a single `uint32_t`
-    uint32x4_t sum32 = vpaddlq_u16(sum16);  // pairwise add into 32-bit integers
-    uint64x2_t sum64 = vpaddlq_u32(sum32);  // pairwise add into 64-bit integers
-    uint32_t final_sum = vaddvq_u64(sum64); // final horizontal add to 32-bit result
+    // Now reduce the `uint16x8_t` to a single `simsimd_u32_t`
+    uint32x4_t sum32 = vpaddlq_u16(sum16);       // pairwise add into 32-bit integers
+    uint64x2_t sum64 = vpaddlq_u32(sum32);       // pairwise add into 64-bit integers
+    simsimd_u32_t final_sum = vaddvq_u64(sum64); // final horizontal add to 32-bit result
     return final_sum;
 }
 
@@ -182,6 +213,7 @@ SIMSIMD_PUBLIC void simsimd_hamming_b8_sve(simsimd_b8_t const *a, simsimd_b8_t c
             ++cycle;
         } while (i < n_words && cycle < 31);
         differences += svaddv_u8(all_vec, differences_cycle_vec);
+        SIMSIMD_UNPOISON(&differences, sizeof(differences));
         differences_cycle_vec = svdup_n_u8(0);
         cycle = 0; // Reset the cycle counter.
     }
@@ -218,8 +250,10 @@ SIMSIMD_PUBLIC void simsimd_jaccard_b8_sve(simsimd_b8_t const *a, simsimd_b8_t c
             ++cycle;
         } while (i < n_words && cycle < 31);
         intersection += svaddv_u8(all_vec, intersection_cycle_vec);
+        SIMSIMD_UNPOISON(&intersection, sizeof(intersection));
         intersection_cycle_vec = svdup_n_u8(0);
         union_ += svaddv_u8(all_vec, union_cycle_vec);
+        SIMSIMD_UNPOISON(&union_, sizeof(union_));
         union_cycle_vec = svdup_n_u8(0);
         cycle = 0; // Reset the cycle counter.
     }
@@ -261,7 +295,7 @@ SIMSIMD_PUBLIC void simsimd_hamming_b8_ice(simsimd_b8_t const *a, simsimd_b8_t c
         __m512i xor2_count_vec = _mm512_popcnt_epi64(_mm512_xor_si512(a2_vec, b2_vec));
         xor_count = _mm512_reduce_add_epi64(_mm512_add_epi64(xor2_count_vec, xor1_count_vec));
     }
-    else if (n_words <= 196) { // Up to 1568 bits.
+    else if (n_words <= 192) { // Up to 1536 bits.
         __mmask64 mask = (__mmask64)_bzhi_u64(0xFFFFFFFFFFFFFFFF, n_words - 128);
         __m512i a1_vec = _mm512_loadu_epi8(a);
         __m512i b1_vec = _mm512_loadu_epi8(b);
@@ -321,19 +355,6 @@ SIMSIMD_PUBLIC void simsimd_jaccard_b8_ice(simsimd_b8_t const *a, simsimd_b8_t c
                                            simsimd_distance_t *result) {
 
     simsimd_size_t intersection = 0, union_ = 0;
-    //? On such vectors we can clearly see that the CPU struggles to perform this many parallel
-    //? population counts, because the throughput of Jaccard and Hamming in this case starts to differ.
-    //? One optimization, aside from Harley-Seal transforms can be using "shuffles" for nibble-popcount
-    //? lookups, to utilize other ports on the CPU.
-    //? https://github.com/ashvardanian/SimSIMD/pull/138
-    //
-    //  - `_mm512_popcnt_epi64` maps to `VPOPCNTQ (ZMM, K, ZMM)`:
-    //      - On Ice Lake: 3 cycles latency, ports: 1*p5
-    //      - On Genoa: 2 cycles latency, ports: 1*FP01
-    //  - `_mm512_shuffle_epi8` maps to `VPSHUFB (ZMM, ZMM, ZMM)`:
-    //      - On Ice Lake: 1 cycles latency, ports: 1*p5
-    //      - On Genoa: 2 cycles latency, ports: 1*FP12
-    //
     //  It's harder to squeeze out performance from tiny representations, so we unroll the loops for binary metrics.
     if (n_words <= 64) { // Up to 512 bits.
         __mmask64 mask = (__mmask64)_bzhi_u64(0xFFFFFFFFFFFFFFFF, n_words);
@@ -357,7 +378,7 @@ SIMSIMD_PUBLIC void simsimd_jaccard_b8_ice(simsimd_b8_t const *a, simsimd_b8_t c
         intersection = _mm512_reduce_add_epi64(_mm512_add_epi64(and2_count_vec, and1_count_vec));
         union_ = _mm512_reduce_add_epi64(_mm512_add_epi64(or2_count_vec, or1_count_vec));
     }
-    else if (n_words <= 196) { // Up to 1568 bits.
+    else if (n_words <= 192) { // Up to 1536 bits.
         __mmask64 mask = (__mmask64)_bzhi_u64(0xFFFFFFFFFFFFFFFF, n_words - 128);
         __m512i a1_vec = _mm512_loadu_epi8(a);
         __m512i b1_vec = _mm512_loadu_epi8(b);

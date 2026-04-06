@@ -44,7 +44,7 @@ metric_families = [
     "sparse",  # Intersection of two sparse integer sets, with float/int weights
 ]
 dtype_names = [
-    "bits",  #! Not supported by SciPy
+    "bin8",  #! Not supported by SciPy
     "int8",  #! Presented as supported, but overflows most of the time
     "uint16",
     "uint32",
@@ -70,6 +70,21 @@ class Kernel:
     simsimd_func: callable
     simsimd_all_pairs_func: callable
     tensor_type: callable = np.array
+
+
+def serial_cosine(a: List[float], b: List[float]) -> float:
+    dot_product = sum(ai * bi for ai, bi in zip(a, b))
+    norm_a = sum(ai * ai for ai in a) ** 0.5
+    norm_b = sum(bi * bi for bi in b) ** 0.5
+    if norm_a == 0 and norm_b == 0:
+        return 1
+    if dot_product == 0:
+        return 0
+    return dot_product / (norm_a * norm_b)
+
+
+def serial_sqeuclidean(a: List[float], b: List[float]) -> float:
+    return sum((ai - bi) ** 2 for ai, bi in zip(a, b))
 
 
 def yield_kernels(
@@ -197,6 +212,25 @@ def yield_kernels(
             simd.vdot,
             lambda A, B: simd.cdist(A, B, metric="vdot"),
         )
+    if "spatial" in metric_families:
+        yield from for_dtypes(
+            "serial.cosine",
+            ["float64", "float32", "float16", "int8"],
+            serial_cosine,
+            wrap_rows_batch_calls(serial_cosine),
+            lambda A, B: spd.cdist(A, B, "cosine"),
+            simd.cosine,
+            lambda A, B: simd.cdist(A, B, metric="cosine"),
+        )
+        yield from for_dtypes(
+            "serial.sqeuclidean",
+            ["float64", "float32", "float16", "int8"],
+            serial_sqeuclidean,
+            wrap_rows_batch_calls(serial_sqeuclidean),
+            lambda A, B: spd.cdist(A, B, "sqeuclidean"),
+            simd.sqeuclidean,
+            lambda A, B: simd.cdist(A, B, metric="sqeuclidean"),
+        )
     if "spatial" in metric_families and include_scipy:
         yield from for_dtypes(
             "scipy.cosine",
@@ -248,21 +282,21 @@ def yield_kernels(
     if "binary" in metric_families and include_scipy:
         yield from for_dtypes(
             "scipy.hamming",
-            ["bits"],
+            ["bin8"],
             spd.hamming,
             wrap_rows_batch_calls(spd.hamming),
             lambda A, B: spd.cdist(A, B, "hamming"),
-            lambda A, B: simd.hamming(A, B, "bits"),
-            lambda A, B: simd.cdist(A, B, "bits", metric="hamming"),
+            lambda A, B: simd.hamming(A, B, "bin8"),
+            lambda A, B: simd.cdist(A, B, "bin8", metric="hamming"),
         )
         yield from for_dtypes(
             "scipy.jaccard",
-            ["bits"],
+            ["bin8"],
             spd.jaccard,
             wrap_rows_batch_calls(spd.jaccard),
             lambda A, B: spd.cdist(A, B, "jaccard"),
-            lambda A, B: simd.jaccard(A, B, "bits"),
-            lambda A, B: simd.cdist(A, B, "bits", metric="jaccard"),
+            lambda A, B: simd.jaccard(A, B, "bin8"),
+            lambda A, B: simd.cdist(A, B, "bin8", metric="jaccard"),
         )
     if "spatial" in metric_families and include_scikit:
         yield from for_dtypes(
@@ -351,7 +385,7 @@ def random_matrix(count: int, ndim: int, dtype: str) -> np.ndarray:
         return np.random.randint(0, high=256, size=(count, ndim), dtype=np.int16)
     if dtype == "int8":
         return np.random.randint(-100, high=100, size=(count, ndim), dtype=np.int8)
-    if dtype == "bits":
+    if dtype == "bin8":
         return np.packbits(np.random.randint(0, high=2, size=(count, ndim), dtype=np.uint8), axis=0)
 
 
@@ -528,11 +562,11 @@ def result_to_row(result: Result) -> List[str]:
     if isinstance(result.baseline_seconds, float):
         ops_per_second = result.distance_calculations / result.baseline_seconds
         gbs_per_second = result.bytes_per_vector * ops_per_second / 1e9
-        baseline_cell = f"{ops_per_second:,.0f} ops/s, {gbs_per_second:,.2f} GB/s"
+        baseline_cell = f"{ops_per_second:,.0f} ops/s, {gbs_per_second:,.3f} GB/s"
     if isinstance(result.simsimd_seconds, float):
         ops_per_second = result.distance_calculations / result.simsimd_seconds
         gbs_per_second = result.bytes_per_vector * ops_per_second / 1e9
-        simsimd_cell = f"{ops_per_second:,.0f} ops/s, {gbs_per_second:,.2f} GB/s"
+        simsimd_cell = f"{ops_per_second:,.0f} ops/s, {gbs_per_second:,.3f} GB/s"
     if isinstance(result.baseline_seconds, float) and isinstance(result.simsimd_seconds, float):
         improvement_cell = f"{result.baseline_seconds / result.simsimd_seconds:,.2f} x"
 

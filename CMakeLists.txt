@@ -2,13 +2,13 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(
     simsimd
-    VERSION 5.9.9
+    VERSION 6.5.15
     LANGUAGES C CXX
     DESCRIPTION "Portable mixed-precision BLAS-like vector math library for x86 and ARM"
     HOMEPAGE_URL "https://github.com/ashvardanian/simsimd"
 )
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED YES)
 set(CMAKE_C_EXTENSIONS NO)
 
@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 
-# Determine if SimSIMD is built as a subproject (using `add_subdirectory`) or if it is the main project
+# Determine if SimSIMD is built as a sub-project (using `add_subdirectory`) or if it is the main project
 set(SIMSIMD_IS_MAIN_PROJECT OFF)
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -31,6 +31,31 @@ option(SIMSIMD_BUILD_BENCHMARKS_WITH_CBLAS "Include BLAS in micro-kernel benchma
 # Default to Release build type if not set
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
+endif ()
+
+# MSVC does not set `CMAKE_SYSTEM_PROCESSOR` correctly
+# Use `CMAKE_C_COMPILER_ARCHITECTURE_ID` instead
+if (MSVC)
+    if (CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "x64")
+        set(CMAKE_SYSTEM_PROCESSOR "AMD64")
+    elseif (CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "X86")
+        set(CMAKE_SYSTEM_PROCESSOR "X86")
+    elseif (CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "ARM64")
+        set(CMAKE_SYSTEM_PROCESSOR "ARM64")
+    else ()
+        message(WARNING "Unknown CMAKE_C_COMPILER_ARCHITECTURE_ID=${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
+    endif ()
+endif ()
+
+# Detect target architecture from CMAKE_SYSTEM_PROCESSOR (safe for cross-compilation)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|X86_64|AMD64|amd64")
+    set(SIMSIMD_IS_64BIT_X86_ TRUE)
+    message(STATUS "SimSIMD Platform: x86_64 (CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR})")
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64")
+    set(SIMSIMD_IS_64BIT_ARM_ TRUE)
+    message(STATUS "SimSIMD Platform: ARM64 (CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR})")
+else ()
+    message(WARNING "Unknown CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 endif ()
 
 # Global compiler flags for debug and release
@@ -75,7 +100,7 @@ if (SIMSIMD_BUILD_BENCHMARKS)
     FetchContent_Declare(
         benchmark
         GIT_REPOSITORY https://github.com/google/benchmark.git
-        GIT_TAG v1.7.0
+        GIT_TAG v1.9.4
     )
     FetchContent_MakeAvailable(benchmark)
 
@@ -117,4 +142,20 @@ if (SIMSIMD_BUILD_SHARED)
     add_library(simsimd_shared SHARED ${SIMSIMD_SOURCES})
     target_include_directories(simsimd_shared PUBLIC "${PROJECT_SOURCE_DIR}/include")
     set_target_properties(simsimd_shared PROPERTIES OUTPUT_NAME simsimd)
+
+    install(
+        TARGETS simsimd_shared
+        ARCHIVE
+        BUNDLE
+        FRAMEWORK
+        LIBRARY
+        OBJECTS
+        PRIVATE_HEADER
+        PUBLIC_HEADER
+        RESOURCE
+        RUNTIME
+    )
 endif ()
+
+install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY c/ DESTINATION share/doc/${PROJECT_NAME}/src)

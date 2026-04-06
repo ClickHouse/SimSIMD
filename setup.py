@@ -1,167 +1,247 @@
+# -*- coding: utf-8 -*-
+"""
+SimSIMD build configuration.
+
+This file configures wheels compilation for SimSIMD CPython bindings.
+The architecture detection uses environment variable overrides (set via cibuildwheel)
+to support cross-compilation scenarios like building ARM64 wheels on x64 hosts.
+"""
+from __future__ import annotations
+
 import os
 import sys
-from os.path import dirname
-from setuptools import setup, Extension
+import platform
 from pathlib import Path
+from typing import List, Tuple
 
+from setuptools import setup, Extension
 
 __lib_name__ = "simsimd"
-__version__ = open("VERSION", "r").read().strip()
+__version__ = Path("VERSION").read_text().strip()
 
-compile_args = []
-link_args = []
-macros_args = [
-    ("SIMSIMD_NATIVE_F16", "0"),
-    ("SIMSIMD_NATIVE_BF16", "0"),
-    ("SIMSIMD_DYNAMIC_DISPATCH", "1"),
-]
+# --------------------------------------------------------------------------- #
+# macOS developer-tools sanity check                                          #
+# --------------------------------------------------------------------------- #
+if sys.platform == "darwin":
+    _bad_dev_dir = os.environ.get("DEVELOPER_DIR")
+    if _bad_dev_dir and (_bad_dev_dir == "public" or not Path(_bad_dev_dir).exists()):
+        print(f"[SimSIMD] Ignoring invalid DEVELOPER_DIR={_bad_dev_dir!r}")
+        os.environ.pop("DEVELOPER_DIR", None)
 
 
-def is_editable_install():
-    """Check if the package is installed in editable mode."""
-    if "develop" in sys.argv or "install" in sys.argv and "-e" in sys.argv:
+# --------------------------------------------------------------------------- #
+# Architecture detection with environment override support                     #
+# --------------------------------------------------------------------------- #
+
+
+def is_64bit_x86() -> bool:
+    """Detect x86-64 architecture with environment override support."""
+    override = os.environ.get("SIMSIMD_TARGET_X86")
+    if override is not None:
+        return override == "1"
+    arch = platform.machine().lower()
+    return (arch in ("x86_64", "x64", "amd64")) and (sys.maxsize > 2**32)
+
+
+def is_64bit_arm() -> bool:
+    """Detect ARM64 architecture with environment override support."""
+    override = os.environ.get("SIMSIMD_TARGET_ARM64")
+    if override is not None:
+        return override == "1"
+    arch = platform.machine().lower()
+    return (arch in ("arm64", "aarch64")) and (sys.maxsize > 2**32)
+
+
+# --------------------------------------------------------------------------- #
+# Per-platform build settings                                                 #
+# --------------------------------------------------------------------------- #
+
+
+def linux_settings() -> Tuple[List[str], List[str], List[Tuple[str, str]]]:
+    """Build settings for Linux."""
+    compile_args = [
+        "-std=c11",
+        "-O3",
+        "-ffast-math",
+        "-fdiagnostics-color=always",
+        "-fvisibility=default",
+        "-fPIC",
+        "-w",  # Hush warnings
+        "-fopenmp",  # Enable OpenMP for parallelization
+    ]
+    link_args = [
+        "-shared",
+        "-fopenmp",  # Link against OpenMP
+        "-lm",  # Add vectorized `logf` implementation from the `glibc`
+    ]
+    # On Linux with GCC, enable all SIMD targets for the detected architecture
+    macros = [
+        ("SIMSIMD_DYNAMIC_DISPATCH", "1"),
+        ("SIMSIMD_NATIVE_F16", "0"),
+        ("SIMSIMD_NATIVE_BF16", "0"),
+        # x86 targets
+        ("SIMSIMD_TARGET_HASWELL", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_SKYLAKE", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_ICE", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_GENOA", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_SAPPHIRE", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_TURIN", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_SIERRA", "0"),  # avx2vnni not supported by manylinux GCC
+        # ARM targets
+        ("SIMSIMD_TARGET_NEON", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_I8", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_F16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_BF16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE_I8", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE_F16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE_BF16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE2", "1" if is_64bit_arm() else "0"),
+    ]
+    return compile_args, link_args, macros
+
+
+def darwin_settings() -> Tuple[List[str], List[str], List[Tuple[str, str]]]:
+    """Build settings for macOS."""
+    compile_args = [
+        "-std=c11",
+        "-O3",
+        "-ffast-math",
+        "-w",  # Hush warnings
+    ]
+    link_args: List[str] = []
+    # macOS: no SVE, conservative AVX-512 (not widely available)
+    macros = [
+        ("SIMSIMD_DYNAMIC_DISPATCH", "1"),
+        ("SIMSIMD_NATIVE_F16", "0"),
+        ("SIMSIMD_NATIVE_BF16", "0"),
+        # x86 targets - conservative for macOS compatibility
+        ("SIMSIMD_TARGET_HASWELL", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_SKYLAKE", "0"),  # AVX-512 not common on Mac
+        ("SIMSIMD_TARGET_ICE", "0"),
+        ("SIMSIMD_TARGET_GENOA", "0"),
+        ("SIMSIMD_TARGET_SAPPHIRE", "0"),
+        ("SIMSIMD_TARGET_TURIN", "0"),
+        ("SIMSIMD_TARGET_SIERRA", "0"),
+        # ARM targets - NEON only, no SVE on Apple Silicon
+        ("SIMSIMD_TARGET_NEON", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_I8", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_F16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_BF16", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_SVE", "0"),
+        ("SIMSIMD_TARGET_SVE_I8", "0"),
+        ("SIMSIMD_TARGET_SVE_F16", "0"),
+        ("SIMSIMD_TARGET_SVE_BF16", "0"),
+        ("SIMSIMD_TARGET_SVE2", "0"),
+    ]
+    return compile_args, link_args, macros
+
+
+def windows_settings() -> Tuple[List[str], List[str], List[Tuple[str, str]]]:
+    """Build settings for Windows."""
+    compile_args = [
+        "/std:c11",
+        "/O2",
+        "/fp:fast",
+        # Dealing with MinGW linking errors
+        # https://cibuildwheel.readthedocs.io/en/stable/faq/#windows-importerror-dll-load-failed-the-specific-module-could-not-be-found
+        "/d2FH4-",
+        "/w",
+    ]
+    link_args: List[str] = []
+    # Windows: no SVE, conservative x86 SIMD, as MSVC lacks BF16/FP16 intrinsics support
+    macros = [
+        ("SIMSIMD_DYNAMIC_DISPATCH", "1"),
+        ("SIMSIMD_NATIVE_F16", "0"),
+        ("SIMSIMD_NATIVE_BF16", "0"),
+        # x86 targets - conservative for MSVC compatibility
+        ("SIMSIMD_TARGET_HASWELL", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_SKYLAKE", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_ICE", "1" if is_64bit_x86() else "0"),
+        ("SIMSIMD_TARGET_GENOA", "0"),  # BF16 intrinsics broken in MSVC
+        ("SIMSIMD_TARGET_SAPPHIRE", "0"),  # FP16 intrinsics broken in MSVC
+        ("SIMSIMD_TARGET_TURIN", "0"),  # `VP2INTERSECT` limited in MSVC
+        ("SIMSIMD_TARGET_SIERRA", "0"),  # AVX2 VNNI limits in MSVC
+        ("SIMSIMD_TARGET_NEON", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_I8", "1" if is_64bit_arm() else "0"),
+        ("SIMSIMD_TARGET_NEON_F16", "0"),  # MSVC lacks `float16_t` intrinsics
+        ("SIMSIMD_TARGET_NEON_BF16", "0"),  # MSVC lacks `bfloat16x8_t` intrinsics
+        ("SIMSIMD_TARGET_SVE", "0"),
+        ("SIMSIMD_TARGET_SVE_I8", "0"),
+        ("SIMSIMD_TARGET_SVE_F16", "0"),
+        ("SIMSIMD_TARGET_SVE_BF16", "0"),
+        ("SIMSIMD_TARGET_SVE2", "0"),
+    ]
+    # MSVC requires architecture-specific macros for winnt.h
+    if is_64bit_arm():
+        macros.append(("_ARM64_", "1"))
+    elif is_64bit_x86():
+        macros.append(("_AMD64_", "1"))
+
+    return compile_args, link_args, macros
+
+
+# --------------------------------------------------------------------------- #
+# Platform dispatch                                                           #
+# --------------------------------------------------------------------------- #
+
+if sys.platform == "linux":
+    compile_args, link_args, macros = linux_settings()
+elif sys.platform == "darwin":
+    compile_args, link_args, macros = darwin_settings()
+elif sys.platform == "win32":
+    compile_args, link_args, macros = windows_settings()
+else:
+    compile_args, link_args, macros = [], [], []
+
+
+# --------------------------------------------------------------------------- #
+# Editable install detection                                                  #
+# --------------------------------------------------------------------------- #
+
+
+def _is_editable_install() -> bool:
+    if "develop" in sys.argv or ("install" in sys.argv and "-e" in sys.argv):
         return True
-
-    # Get the path to the site-packages or dist-packages
-    for path in sys.path:
-        egg_link = Path(path) / f"{__lib_name__}.egg-link"
-        if egg_link.exists():
+    for p in sys.path:
+        if Path(p, f"{__lib_name__}.egg-link").exists():
             return True
     return False
 
 
-# Check if the installation is in editable mode:
-# In that case, we can't include type annotations, as it will lead to name resolution issues.
-setup_kwargs = (
+SETUP_KWARGS = (
     {
         "packages": ["simsimd"],
         "package_dir": {"simsimd": "python/annotations"},
         "package_data": {"simsimd": ["__init__.pyi", "py.typed"]},
     }
-    if not is_editable_install()
+    if not _is_editable_install()
     else {}
 )
 
-if is_editable_install():
-    print("You are installing in editable mode. Skipping type annotations installation.")
+if _is_editable_install():
+    print("[SimSIMD] Editable install detected - skipping bundled type stubs.")
 
 
-def get_bool_env(name: str, preference: bool) -> bool:
-    return os.environ.get(name, "1" if preference else "0") == "1"
-
-
-def get_bool_env_w_name(name: str, preference: bool) -> tuple:
-    return name, "1" if get_bool_env(name, preference) else "0"
-
-
-if sys.platform == "linux":
-    compile_args.append("-std=c11")
-    compile_args.append("-O3")
-    compile_args.append("-ffast-math")
-    compile_args.append("-fdiagnostics-color=always")
-    compile_args.append("-fvisibility=default")
-    compile_args.append("-fPIC")
-    link_args.append("-shared")
-
-    # Disable warnings
-    compile_args.append("-w")
-
-    # Enable OpenMP for Linux
-    compile_args.append("-fopenmp")
-    link_args.append("-fopenmp")
-
-    # Add vectorized `logf` implementation from the `glibc`
-    link_args.append("-lm")
-
-    # SIMD all the way on Linux!
-    macros_args.extend(
-        [
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_F16", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_BF16", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE_F16", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE_BF16", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE2", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_HASWELL", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SKYLAKE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_ICE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_GENOA", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SAPPHIRE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_TURIN", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SIERRA", False),  # TODO: Add target spec to GCC & Clang
-        ]
-    )
-
-if sys.platform == "darwin":
-    compile_args.append("-std=c11")
-    compile_args.append("-O3")
-    compile_args.append("-ffast-math")
-
-    # Disable warnings
-    compile_args.append("-w")
-
-    # We can't SIMD all the way on MacOS :(
-    macros_args.extend(
-        [
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_F16", True),  # Supported on Apple M1 and newer
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_BF16", True),  # Supported on Apple M2 and newer
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE2", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_HASWELL", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SKYLAKE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_ICE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_GENOA", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SAPPHIRE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_TURIN", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SIERRA", False),
-        ]
-    )
-
-if sys.platform == "win32":
-    compile_args.append("/std:c11")
-    compile_args.append("/O2")
-    compile_args.append("/fp:fast")
-    compile_args.append("/EXPORT:*")
-
-    # Dealing with MinGW linking errors
-    # https://cibuildwheel.readthedocs.io/en/stable/faq/#windows-importerror-dll-load-failed-the-specific-module-could-not-be-found
-    compile_args.append("/d2FH4-")
-
-    # We can't SIMD all the way on Windows :(
-    # Even NEON `f16` fails: https://github.com/ashvardanian/SimSIMD/actions/runs/11419164624/job/31773473319?pr=214
-    macros_args.extend(
-        [
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_F16", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_NEON_BF16", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SVE2", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_HASWELL", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_SKYLAKE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_ICE", True),
-            get_bool_env_w_name("SIMSIMD_TARGET_GENOA", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SAPPHIRE", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_TURIN", False),
-            get_bool_env_w_name("SIMSIMD_TARGET_SIERRA", False),
-        ]
-    )
+# --------------------------------------------------------------------------- #
+# Extension module                                                            #
+# --------------------------------------------------------------------------- #
 
 ext_modules = [
     Extension(
         "simsimd",
         sources=["python/lib.c", "c/lib.c"],
         include_dirs=["include"],
+        language="c",
         extra_compile_args=compile_args,
         extra_link_args=link_args,
-        define_macros=macros_args,
-    ),
+        define_macros=macros,
+    )
 ]
 
-this_directory = os.path.abspath(dirname(__file__))
-with open(os.path.join(this_directory, "README.md"), "r", encoding="utf8") as f:
-    long_description = f.read()
+# --------------------------------------------------------------------------- #
+# Setup                                                                       #
+# --------------------------------------------------------------------------- #
 
 setup(
     name=__lib_name__,
@@ -170,7 +250,7 @@ setup(
     author_email="1983160+ashvardanian@users.noreply.github.com",
     url="https://github.com/ashvardanian/simsimd",
     description="Portable mixed-precision BLAS-like vector math library for x86 and ARM",
-    long_description=long_description,
+    long_description=Path("README.md").read_text(encoding="utf8"),
     long_description_content_type="text/markdown",
     license="Apache-2.0",
     classifiers=[
@@ -185,12 +265,13 @@ setup(
         "Programming Language :: C",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: Free Threading :: 3 - Stable",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -200,5 +281,5 @@ setup(
     ext_modules=ext_modules,
     zip_safe=False,
     include_package_data=True,
-    **setup_kwargs,
+    **SETUP_KWARGS,
 )

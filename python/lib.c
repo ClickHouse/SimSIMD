@@ -3,7 +3,6 @@
  *  @file       lib.c
  *  @author     Ash Vardanian
  *  @date       January 1, 2023
- *  @copyright  Copyright (c) 2023
  *
  *  @section    Latency, Quality, and Arguments Parsing
  *
@@ -62,11 +61,33 @@
  *  If the argument is not found, a @b `KeyError` is raised.
  *
  *  https://ashvardanian.com/posts/discount-on-keyword-arguments-in-python/
+ *
+ *  @section    Buffer Protocol and NumPy Compatibility
+ *
+ *  Most modern Machine Learning frameworks struggle with the buffer protocol compatibility.
+ *  At best, they provide zero-copy NumPy views of the underlying data, introducing unnecessary
+ *  dependency on NumPy, a memory allocation for the wrapper, and a constraint on the supported
+ *  numeric types. The last is a noticeable limitation, as both PyTorch and TensorFlow have
+ *  richer type systems than NumPy.
+ *
+ *  You can't convert a PyTorch `Tensor` to a `memoryview` object.
+ *  If you try to convert a `bf16` TensorFlow `Tensor` to a `memoryview` object, you will get an error:
+ *
+ *      ! ValueError: cannot include dtype 'E' in a buffer
+ *
+ *  Moreover, the CPython documentation and the NumPy documentation diverge on the format specificers
+ *  for the `typestr` and `format` data-type descriptor strings, making the development error-prone.
+ *  At this point, SimSIMD seems to be @b the_only_package that at least attempts to provide interoperability.
+ *
+ *  https://numpy.org/doc/stable/reference/arrays.interface.html
+ *  https://pearu.github.io/array_interface_pytorch.html
+ *  https://github.com/pytorch/pytorch/issues/54138
+ *  https://github.com/pybind/pybind11/issues/1908
  */
 #include <math.h>
 
 #if defined(__linux__)
-#ifdef _OPENMP
+#if defined(_OPENMP)
 #include <omp.h>
 #endif
 #endif
@@ -112,7 +133,7 @@ static PyTypeObject DistancesTensorType = {
     .tp_as_buffer = &DistancesTensor_as_buffer,
 };
 
-/// @brief  Global variable that caches the CPU capabilities, and is computed just onc, when the module is loaded.
+/// @brief  Global variable that caches the CPU capabilities, and is computed just once, when the module is loaded.
 simsimd_capability_t static_capabilities = simsimd_cap_serial_k;
 
 /// @brief Helper method to check for string equality.
@@ -126,115 +147,114 @@ int is_complex(simsimd_datatype_t datatype) {
            datatype == simsimd_datatype_f16c_k || datatype == simsimd_datatype_bf16c_k;
 }
 
-/// @brief Converts a numpy datatype string to a logical datatype, normalizing the format.
+/// @brief Converts a Python-ic datatype string to a logical datatype, normalizing the format.
 /// @return `simsimd_datatype_unknown_k` if the datatype is not supported, otherwise the logical datatype.
 /// @see https://docs.python.org/3/library/struct.html#format-characters
-simsimd_datatype_t numpy_string_to_datatype(char const *name) {
-    // Floating-point numbers:
-    if (same_string(name, "f") || same_string(name, "<f") || same_string(name, "f4") || same_string(name, "<f4") ||
-        same_string(name, "float32"))
-        return simsimd_datatype_f32_k;
-    else if (same_string(name, "e") || same_string(name, "<e") || same_string(name, "f2") || same_string(name, "<f2") ||
-             same_string(name, "float16"))
-        return simsimd_datatype_f16_k;
-    else if (same_string(name, "d") || same_string(name, "<d") || same_string(name, "f8") || same_string(name, "<f8") ||
-             same_string(name, "float64"))
-        return simsimd_datatype_f64_k;
-    else if (same_string(name, "bfloat16")) //? Is it what it's gonna look like?
-        return simsimd_datatype_bf16_k;
-
-    // Complex numbers:
-    else if (same_string(name, "Zf") || same_string(name, "F") || same_string(name, "<F") || same_string(name, "F4") ||
-             same_string(name, "<F4") || same_string(name, "complex64"))
-        return simsimd_datatype_f32c_k;
-    else if (same_string(name, "Zd") || same_string(name, "D") || same_string(name, "<D") || same_string(name, "F8") ||
-             same_string(name, "<F8") || same_string(name, "complex128"))
-        return simsimd_datatype_f64c_k;
-    else if (same_string(name, "Ze") || same_string(name, "E") || same_string(name, "<E") || same_string(name, "F2") ||
-             same_string(name, "<F2") || same_string(name, "complex32"))
-        return simsimd_datatype_f16c_k;
-    else if (same_string(name, "bcomplex32")) //? Is it what it's gonna look like?
-        return simsimd_datatype_bf16c_k;
-
-    // Boolean values:
-    else if (same_string(name, "c") || same_string(name, "b8") || same_string(name, "bits"))
-        return simsimd_datatype_b8_k;
-
-    // Signed integers:
-    else if (same_string(name, "b") || same_string(name, "<b") || same_string(name, "i1") || same_string(name, "|i1") ||
-             same_string(name, "<i1") || same_string(name, "int8"))
-        return simsimd_datatype_i8_k;
-    else if (same_string(name, "h") || same_string(name, "<h") || same_string(name, "i2") || same_string(name, "|i2") ||
-             same_string(name, "<i2") || same_string(name, "int16"))
-        return simsimd_datatype_i16_k;
-    else if (same_string(name, "i") || same_string(name, "<i") || same_string(name, "i4") || same_string(name, "|i4") ||
-             same_string(name, "<i4") || same_string(name, "l") || same_string(name, "<l") ||
-             same_string(name, "int32"))
-        return simsimd_datatype_i32_k;
-
-    // Unsigned integers:
-    else if (same_string(name, "B") || same_string(name, "<B") || same_string(name, "u1") || same_string(name, "|u1") ||
-             same_string(name, "<u1") || same_string(name, "uint8"))
-        return simsimd_datatype_u8_k;
-    else if (same_string(name, "H") || same_string(name, "<H") || same_string(name, "u2") || same_string(name, "|u2") ||
-             same_string(name, "<u2") || same_string(name, "uint16"))
-        return simsimd_datatype_u16_k;
-    else if (same_string(name, "I") || same_string(name, "<I") || same_string(name, "L") || same_string(name, "<L") ||
-             same_string(name, "u4") || same_string(name, "|u4") || same_string(name, "<u4") ||
-             same_string(name, "uint32"))
-        return simsimd_datatype_u32_k;
-
-    else
-        return simsimd_datatype_unknown_k;
-}
-
-/// @brief Converts a Python string to a logical datatype, normalizing the format.
-/// @see https://docs.python.org/3/library/struct.html#format-characters
+/// @see https://numpy.org/doc/stable/reference/arrays.interface.html
+/// @see https://github.com/pybind/pybind11/issues/1908
 simsimd_datatype_t python_string_to_datatype(char const *name) {
     // Floating-point numbers:
-    if (same_string(name, "f") || same_string(name, "f32") || same_string(name, "float32"))
+    if (same_string(name, "float32") || same_string(name, "f32") || // SimSIMD-specific
+        same_string(name, "f4") || same_string(name, "<f4") ||      // Sized float
+        same_string(name, "f") || same_string(name, "<f"))          // Named type
         return simsimd_datatype_f32_k;
-    else if (same_string(name, "e") || same_string(name, "f16") || same_string(name, "float16"))
+    else if (same_string(name, "float16") || same_string(name, "f16") || // SimSIMD-specific
+             same_string(name, "f2") || same_string(name, "<f2") ||      // Sized float
+             same_string(name, "e") || same_string(name, "<e"))          // Named type
         return simsimd_datatype_f16_k;
-    else if (same_string(name, "d") || same_string(name, "f64") || same_string(name, "float64"))
+    else if (same_string(name, "float64") || same_string(name, "f64") || // SimSIMD-specific
+             same_string(name, "f8") || same_string(name, "<f8") ||      // Sized float
+             same_string(name, "d") || same_string(name, "<d"))          // Named type
         return simsimd_datatype_f64_k;
-    else if (same_string(name, "bh") || same_string(name, "bf16") || same_string(name, "bfloat16"))
+    //? The exact format is not defined, but TensorFlow uses 'E' for `bf16`?!
+    else if (same_string(name, "bfloat16") || same_string(name, "bf16")) // SimSIMD-specific
         return simsimd_datatype_bf16_k;
 
     // Complex numbers:
-    else if (same_string(name, "complex64"))
+    else if (same_string(name, "complex64") ||                                             // SimSIMD-specific
+             same_string(name, "F4") || same_string(name, "<F4") ||                        // Sized complex
+             same_string(name, "Zf") || same_string(name, "F") || same_string(name, "<F")) // Named type
         return simsimd_datatype_f32c_k;
-    else if (same_string(name, "complex128"))
+    else if (same_string(name, "complex128") ||                                            // SimSIMD-specific
+             same_string(name, "F8") || same_string(name, "<F8") ||                        // Sized complex
+             same_string(name, "Zd") || same_string(name, "D") || same_string(name, "<D")) // Named type
         return simsimd_datatype_f64c_k;
-    else if (same_string(name, "complex32"))
+    else if (same_string(name, "complex32") ||                                             // SimSIMD-specific
+             same_string(name, "F2") || same_string(name, "<F2") ||                        // Sized complex
+             same_string(name, "Ze") || same_string(name, "E") || same_string(name, "<E")) // Named type
         return simsimd_datatype_f16c_k;
-    else if (same_string(name, "bcomplex32"))
+    //? The exact format is not defined, but TensorFlow uses 'E' for `bf16`?!
+    else if (same_string(name, "bcomplex32")) // SimSIMD-specific
         return simsimd_datatype_bf16c_k;
 
-    // Boolean values:
-    else if (same_string(name, "c") || same_string(name, "b8") || same_string(name, "bits"))
+    //! Boolean values:
+    else if (same_string(name, "bin8") || // SimSIMD-specific
+             same_string(name, "?"))      // Named type
         return simsimd_datatype_b8_k;
 
     // Signed integers:
-    else if (same_string(name, "b") || same_string(name, "i8") || same_string(name, "int8"))
+    else if (same_string(name, "int8") ||                                                       // SimSIMD-specific
+             same_string(name, "i1") || same_string(name, "|i1") || same_string(name, "<i1") || // Sized integer
+             same_string(name, "b") || same_string(name, "<b"))                                 // Named type
         return simsimd_datatype_i8_k;
-    else if (same_string(name, "h") || same_string(name, "i16") || same_string(name, "int16"))
+    else if (same_string(name, "int16") ||                                                      // SimSIMD-specific
+             same_string(name, "i2") || same_string(name, "|i2") || same_string(name, "<i2") || // Sized integer
+             same_string(name, "h") || same_string(name, "<h"))                                 // Named type
         return simsimd_datatype_i16_k;
-    else if (same_string(name, "i") || same_string(name, "i32") || same_string(name, "int32") || same_string(name, "l"))
+
+    //! On Windows the 32-bit and 64-bit signed integers will have different specifiers:
+    //! https://github.com/pybind/pybind11/issues/1908
+#if defined(_MSC_VER) || defined(__i386__)
+    else if (same_string(name, "int32") ||                                                      // SimSIMD-specific
+             same_string(name, "i4") || same_string(name, "|i4") || same_string(name, "<i4") || // Sized integer
+             same_string(name, "l") || same_string(name, "<l"))                                 // Named type
         return simsimd_datatype_i32_k;
-    else if (same_string(name, "q") || same_string(name, "i64") || same_string(name, "int64"))
+    else if (same_string(name, "int64") ||                                                      // SimSIMD-specific
+             same_string(name, "i8") || same_string(name, "|i8") || same_string(name, "<i8") || // Sized integer
+             same_string(name, "q") || same_string(name, "<q"))                                 // Named type
         return simsimd_datatype_i64_k;
+#else // On Linux and macOS:
+    else if (same_string(name, "int32") ||                                                      // SimSIMD-specific
+             same_string(name, "i4") || same_string(name, "|i4") || same_string(name, "<i4") || // Sized integer
+             same_string(name, "i") || same_string(name, "<i"))                                 // Named type
+        return simsimd_datatype_i32_k;
+    else if (same_string(name, "int64") ||                                                      // SimSIMD-specific
+             same_string(name, "i8") || same_string(name, "|i8") || same_string(name, "<i8") || // Sized integer
+             same_string(name, "l") || same_string(name, "<l"))                                 // Named type
+        return simsimd_datatype_i64_k;
+#endif
 
     // Unsigned integers:
-    else if (same_string(name, "B") || same_string(name, "u8") || same_string(name, "uint8"))
+    else if (same_string(name, "uint8") ||                                                      // SimSIMD-specific
+             same_string(name, "u1") || same_string(name, "|u1") || same_string(name, "<u1") || // Sized integer
+             same_string(name, "B") || same_string(name, "<B"))                                 // Named type
         return simsimd_datatype_u8_k;
-    else if (same_string(name, "H") || same_string(name, "u16") || same_string(name, "uint16"))
+    else if (same_string(name, "uint16") ||                                                     // SimSIMD-specific
+             same_string(name, "u2") || same_string(name, "|u2") || same_string(name, "<u2") || // Sized integer
+             same_string(name, "H") || same_string(name, "<H"))                                 // Named type
         return simsimd_datatype_u16_k;
-    else if (same_string(name, "I") || same_string(name, "u32") || same_string(name, "uint32") ||
-             same_string(name, "L"))
+
+    //! On Windows the 32-bit and 64-bit unsigned integers will have different specifiers:
+    //! https://github.com/pybind/pybind11/issues/1908
+#if defined(_MSC_VER) || defined(__i386__)
+    else if (same_string(name, "uint32") ||                                                     // SimSIMD-specific
+             same_string(name, "i4") || same_string(name, "|i4") || same_string(name, "<i4") || // Sized integer
+             same_string(name, "L") || same_string(name, "<L"))                                 // Named type
         return simsimd_datatype_u32_k;
-    else if (same_string(name, "Q") || same_string(name, "u64") || same_string(name, "uint64"))
+    else if (same_string(name, "uint64") ||                                                     // SimSIMD-specific
+             same_string(name, "i8") || same_string(name, "|i8") || same_string(name, "<i8") || // Sized integer
+             same_string(name, "Q") || same_string(name, "<Q"))                                 // Named type
         return simsimd_datatype_u64_k;
+#else // On Linux and macOS:
+    else if (same_string(name, "uint32") ||                                                     // SimSIMD-specific
+             same_string(name, "u4") || same_string(name, "|u4") || same_string(name, "<u4") || // Sized integer
+             same_string(name, "I") || same_string(name, "<I"))                                 // Named type
+        return simsimd_datatype_u32_k;
+    else if (same_string(name, "uint64") ||                                                     // SimSIMD-specific
+             same_string(name, "u8") || same_string(name, "|u8") || same_string(name, "<u8") || // Sized integer
+             same_string(name, "L") || same_string(name, "<L"))                                 // Named type
+        return simsimd_datatype_u64_k;
+#endif
 
     else
         return simsimd_datatype_unknown_k;
@@ -255,7 +275,7 @@ char const *datatype_to_python_string(simsimd_datatype_t dtype) {
     case simsimd_datatype_f32c_k: return "Zf";
     case simsimd_datatype_f16c_k: return "Ze";
     // Boolean values:
-    case simsimd_datatype_b8_k: return "c";
+    case simsimd_datatype_b8_k: return "?";
     // Signed integers:
     case simsimd_datatype_i8_k: return "b";
     case simsimd_datatype_i16_k: return "h";
@@ -299,6 +319,8 @@ size_t bytes_per_datatype(simsimd_datatype_t dtype) {
 
 /// @brief Copy a distance to a target datatype, downcasting if necessary.
 /// @return 1 if the cast was successful, 0 if the target datatype is not supported.
+/// @note For integer types, we use rounding (not truncation) to minimize precision loss
+///       when the source floating-point value is close to an integer boundary.
 int cast_distance(simsimd_distance_t distance, simsimd_datatype_t target_dtype, void *target_ptr, size_t offset) {
     switch (target_dtype) {
     case simsimd_datatype_f64c_k: ((simsimd_f64_t *)target_ptr)[offset] = (simsimd_f64_t)distance; return 1;
@@ -309,14 +331,15 @@ int cast_distance(simsimd_distance_t distance, simsimd_datatype_t target_dtype, 
     case simsimd_datatype_f16_k: simsimd_f32_to_f16(distance, (simsimd_f16_t *)target_ptr + offset); return 1;
     case simsimd_datatype_bf16c_k: simsimd_f32_to_bf16(distance, (simsimd_bf16_t *)target_ptr + offset); return 1;
     case simsimd_datatype_bf16_k: simsimd_f32_to_bf16(distance, (simsimd_bf16_t *)target_ptr + offset); return 1;
-    case simsimd_datatype_i8_k: ((simsimd_i8_t *)target_ptr)[offset] = (simsimd_i8_t)distance; return 1;
-    case simsimd_datatype_u8_k: ((simsimd_u8_t *)target_ptr)[offset] = (simsimd_u8_t)distance; return 1;
-    case simsimd_datatype_i16_k: ((simsimd_i16_t *)target_ptr)[offset] = (simsimd_i16_t)distance; return 1;
-    case simsimd_datatype_u16_k: ((simsimd_u16_t *)target_ptr)[offset] = (simsimd_u16_t)distance; return 1;
-    case simsimd_datatype_i32_k: ((simsimd_i32_t *)target_ptr)[offset] = (simsimd_i32_t)distance; return 1;
-    case simsimd_datatype_u32_k: ((simsimd_u32_t *)target_ptr)[offset] = (simsimd_u32_t)distance; return 1;
-    case simsimd_datatype_i64_k: ((simsimd_i64_t *)target_ptr)[offset] = (simsimd_i64_t)distance; return 1;
-    case simsimd_datatype_u64_k: ((simsimd_u64_t *)target_ptr)[offset] = (simsimd_u64_t)distance; return 1;
+    // For integer types, use rounding instead of truncation to handle float32 vs float64 precision differences
+    case simsimd_datatype_i8_k: ((simsimd_i8_t *)target_ptr)[offset] = (simsimd_i8_t)lround(distance); return 1;
+    case simsimd_datatype_u8_k: ((simsimd_u8_t *)target_ptr)[offset] = (simsimd_u8_t)lround(distance); return 1;
+    case simsimd_datatype_i16_k: ((simsimd_i16_t *)target_ptr)[offset] = (simsimd_i16_t)lround(distance); return 1;
+    case simsimd_datatype_u16_k: ((simsimd_u16_t *)target_ptr)[offset] = (simsimd_u16_t)lround(distance); return 1;
+    case simsimd_datatype_i32_k: ((simsimd_i32_t *)target_ptr)[offset] = (simsimd_i32_t)lround(distance); return 1;
+    case simsimd_datatype_u32_k: ((simsimd_u32_t *)target_ptr)[offset] = (simsimd_u32_t)lround(distance); return 1;
+    case simsimd_datatype_i64_k: ((simsimd_i64_t *)target_ptr)[offset] = (simsimd_i64_t)llround(distance); return 1;
+    case simsimd_datatype_u64_k: ((simsimd_u64_t *)target_ptr)[offset] = (simsimd_u64_t)llround(distance); return 1;
     default: return 0;
     }
 }
@@ -485,7 +508,13 @@ int parse_tensor(PyObject *tensor, Py_buffer *buffer, TensorArgument *parsed) {
     // printf("buffer shape is %d\n", buffer->shape[1]);
     // printf("buffer itemsize is %d\n", buffer->itemsize);
     parsed->start = buffer->buf;
-    parsed->datatype = numpy_string_to_datatype(buffer->format);
+    parsed->datatype = python_string_to_datatype(buffer->format);
+    if (parsed->datatype == simsimd_datatype_unknown_k) {
+        PyErr_Format(PyExc_ValueError, "Unsupported '%s' datatype specifier", buffer->format);
+        PyBuffer_Release(buffer);
+        return 0;
+    }
+
     parsed->rank = buffer->ndim;
     if (buffer->ndim == 1) {
         if (buffer->strides[0] > buffer->itemsize) {
@@ -512,9 +541,6 @@ int parse_tensor(PyObject *tensor, Py_buffer *buffer, TensorArgument *parsed) {
         PyBuffer_Release(buffer);
         return 0;
     }
-
-    // We handle complex numbers differently
-    if (is_complex(parsed->datatype)) { parsed->dimensions *= 2; }
 
     return 1;
 }
@@ -684,9 +710,10 @@ static PyObject *implement_dense_metric( //
     }
 
     // Look up the metric and the capability
-    simsimd_metric_punned_t metric = NULL;
+    simsimd_metric_dense_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k, &metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError,
@@ -702,17 +729,12 @@ static PyObject *implement_dense_metric( //
     // If the distance is computed between two vectors, rather than matrices, return a scalar
     int const dtype_is_complex = is_complex(dtype);
     if (a_parsed.rank == 1 && b_parsed.rank == 1) {
-        // For complex numbers we are going to use `PyComplex_FromDoubles`.
-        if (dtype_is_complex) {
-            simsimd_distance_t distances[2];
-            metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, distances);
-            return_obj = PyComplex_FromDoubles(distances[0], distances[1]);
-        }
-        else {
-            simsimd_distance_t distance;
-            metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, &distance);
-            return_obj = PyFloat_FromDouble(distance);
-        }
+        simsimd_distance_t distances[2];
+        metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, distances);
+        return_obj =         //
+            dtype_is_complex //
+                ? PyComplex_FromDoubles(distances[0], distances[1])
+                : PyFloat_FromDouble(distances[0]);
         goto cleanup;
     }
 
@@ -765,6 +787,9 @@ static PyObject *implement_dense_metric( //
         return_obj = Py_None;
     }
 
+    // Now let's release the GIL for the parallel part using the underlying mechanism of `Py_BEGIN_ALLOW_THREADS`.
+    PyThreadState *save = PyEval_SaveThread();
+
     // Compute the distances
     for (size_t i = 0; i < count_pairs; ++i) {
         simsimd_distance_t result[2];
@@ -778,6 +803,8 @@ static PyObject *implement_dense_metric( //
         cast_distance(result[0], out_dtype, distances_start + i * distances_stride_bytes, 0);
         if (dtype_is_complex) cast_distance(result[1], out_dtype, distances_start + i * distances_stride_bytes, 1);
     }
+
+    PyEval_RestoreThread(save);
 
 cleanup:
     PyBuffer_Release(&a_buffer);
@@ -889,8 +916,8 @@ static PyObject *implement_curved_metric( //
     // Look up the metric and the capability
     simsimd_metric_curved_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
-                               (simsimd_metric_punned_t *)&metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError,
@@ -904,9 +931,14 @@ static PyObject *implement_curved_metric( //
         goto cleanup;
     }
 
-    simsimd_distance_t distance;
-    metric(a_parsed.start, b_parsed.start, c_parsed.start, a_parsed.dimensions, &distance);
-    return_obj = PyFloat_FromDouble(distance);
+    // If the distance is computed between two vectors, rather than matrices, return a scalar
+    int const dtype_is_complex = is_complex(dtype);
+    simsimd_distance_t distances[2];
+    metric(a_parsed.start, b_parsed.start, c_parsed.start, a_parsed.dimensions, &distances[0]);
+    return_obj =         //
+        dtype_is_complex //
+            ? PyComplex_FromDoubles(distances[0], distances[1])
+            : PyFloat_FromDouble(distances[0]);
 
 cleanup:
     PyBuffer_Release(&a_buffer);
@@ -948,8 +980,8 @@ static PyObject *implement_sparse_metric( //
     simsimd_datatype_t dtype = a_parsed.datatype;
     simsimd_metric_sparse_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
-                               (simsimd_metric_punned_t *)&metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError, "Unsupported metric '%c' and datatype combination ('%s'/'%s' and '%s'/'%s')",
@@ -1040,9 +1072,10 @@ static PyObject *implement_cdist(                        //
     }
 
     // Look up the metric and the capability
-    simsimd_metric_punned_t metric = NULL;
+    simsimd_metric_dense_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k, &metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError, "Unsupported metric '%c' and datatype combination ('%s'/'%s' and '%s'/'%s')",
@@ -1055,22 +1088,17 @@ static PyObject *implement_cdist(                        //
     // If the distance is computed between two vectors, rather than matrices, return a scalar
     int const dtype_is_complex = is_complex(dtype);
     if (a_parsed.rank == 1 && b_parsed.rank == 1) {
-        // For complex numbers we are going to use `PyComplex_FromDoubles`.
-        if (dtype_is_complex) {
-            simsimd_distance_t distances[2];
-            metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, distances);
-            return_obj = PyComplex_FromDoubles(distances[0], distances[1]);
-        }
-        else {
-            simsimd_distance_t distance;
-            metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, &distance);
-            return_obj = PyFloat_FromDouble(distance);
-        }
+        simsimd_distance_t distances[2];
+        metric(a_parsed.start, b_parsed.start, a_parsed.dimensions, distances);
+        return_obj =         //
+            dtype_is_complex //
+                ? PyComplex_FromDoubles(distances[0], distances[1])
+                : PyFloat_FromDouble(distances[0]);
         goto cleanup;
     }
 
-#ifdef __linux__
-#ifdef _OPENMP
+#if defined(__linux__)
+#if defined(_OPENMP)
     if (threads == 0) threads = omp_get_num_procs();
     omp_set_num_threads(threads);
 #endif
@@ -1122,6 +1150,9 @@ static PyObject *implement_cdist(                        //
         return_obj = Py_None;
     }
 
+    // Now let's release the GIL for the parallel part using the underlying mechanism of `Py_BEGIN_ALLOW_THREADS`.
+    PyThreadState *save = PyEval_SaveThread();
+
     // Assuming most of our kernels are symmetric, we only need to compute the upper triangle
     // if we are computing all pairwise distances within the same set.
     int const is_symmetric = kernel_is_commutative(metric_kind) && a_parsed.start == b_parsed.start &&
@@ -1155,6 +1186,8 @@ static PyObject *implement_cdist(                        //
                               distances_start + j * distances_rows_stride_bytes + i * distances_cols_stride_bytes, 1);
         }
 
+    PyEval_RestoreThread(save);
+
 cleanup:
     PyBuffer_Release(&a_buffer);
     PyBuffer_Release(&b_buffer);
@@ -1175,9 +1208,9 @@ static PyObject *implement_pointer_access(simsimd_metric_kind_t metric_kind, PyO
         return NULL;
     }
 
-    simsimd_metric_punned_t metric = NULL;
+    simsimd_kernel_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
-    simsimd_find_metric_punned(metric_kind, datatype, static_capabilities, simsimd_cap_any_k, &metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, datatype, static_capabilities, simsimd_cap_any_k, &metric, &capability);
     if (metric == NULL) {
         PyErr_SetString(PyExc_LookupError, "No such metric");
         return NULL;
@@ -1193,16 +1226,14 @@ static char const doc_cdist[] = //
     "    b (NDArray): Second matrix.\n"
     "    metric (str, optional): Distance metric to use (e.g., 'sqeuclidean', 'cosine').\n"
     "    out (NDArray, optional): Output matrix to store the result.\n"
-    "    dtype (Union[IntegralType, FloatType, ComplexType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType, ComplexType], optional): Override the presumed input type name.\n"
     "    out_dtype (Union[FloatType, ComplexType], optional): Result type, default is 'float64'.\n\n"
     "    threads (int, optional): Number of threads to use (default is 1).\n"
     "Returns:\n"
     "    DistancesTensor: Pairwise distances between all inputs.\n\n"
     "Equivalent to: `scipy.spatial.distance.cdist`.\n"
-    "Notes:\n"
-    "    * `a` and `b` are positional-only arguments.\n"
-    "    * `metric` can be positional or keyword.\n"
-    "    * `out`, `threads`, `dtype`, and `out_dtype` are keyword-only arguments.";
+    "Signature:\n"
+    "    >>> def cdist(a, b, /, metric, *, dtype, out, out_dtype, threads) -> Optional[DistancesTensor]: ...";
 
 static PyObject *api_cdist( //
     PyObject *self, PyObject *const *args, Py_ssize_t const positional_args_count, PyObject *args_names_tuple) {
@@ -1356,7 +1387,7 @@ static char const doc_l2[] = //
     "Args:\n"
     "    a (NDArray): First matrix or vector.\n"
     "    b (NDArray): Second matrix or vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1376,7 +1407,7 @@ static char const doc_l2sq[] = //
     "Args:\n"
     "    a (NDArray): First matrix or vector.\n"
     "    b (NDArray): Second matrix or vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1396,7 +1427,7 @@ static char const doc_cos[] = //
     "Args:\n"
     "    a (NDArray): First matrix or vector.\n"
     "    b (NDArray): Second matrix or vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1416,7 +1447,7 @@ static char const doc_dot[] = //
     "Args:\n"
     "    a (NDArray): First matrix or vector.\n"
     "    b (NDArray): Second matrix or vector.\n"
-    "    dtype (Union[IntegralType, FloatType, ComplexType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType, ComplexType], optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (Union[FloatType, ComplexType], optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1436,7 +1467,7 @@ static char const doc_vdot[] = //
     "Args:\n"
     "    a (NDArray): First complex matrix or vector.\n"
     "    b (NDArray): Second complex matrix or vector.\n"
-    "    dtype (ComplexType, optional): Override the presumed input type.\n"
+    "    dtype (ComplexType, optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (Union[ComplexType], optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1456,7 +1487,7 @@ static char const doc_kl[] = //
     "Args:\n"
     "    a (NDArray): First floating-point matrix or vector.\n"
     "    b (NDArray): Second floating-point matrix or vector.\n"
-    "    dtype (FloatType, optional): Override the presumed input type.\n"
+    "    dtype (FloatType, optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1476,7 +1507,7 @@ static char const doc_js[] = //
     "Args:\n"
     "    a (NDArray): First floating-point matrix or vector.\n"
     "    b (NDArray): Second floating-point matrix or vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1496,7 +1527,7 @@ static char const doc_hamming[] = //
     "Args:\n"
     "    a (NDArray): First binary matrix or vector.\n"
     "    b (NDArray): Second binary matrix or vector.\n"
-    "    dtype (IntegralType, optional): Override the presumed input type.\n"
+    "    dtype (IntegralType, optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1516,7 +1547,7 @@ static char const doc_jaccard[] = //
     "Args:\n"
     "    a (NDArray): First binary matrix or vector.\n"
     "    b (NDArray): Second binary matrix or vector.\n"
-    "    dtype (IntegralType, optional): Override the presumed input type.\n"
+    "    dtype (IntegralType, optional): Override the presumed input type name.\n"
     "    out (NDArray, optional): Vector for resulting distances. Allocates a new tensor by default.\n"
     "    out_dtype (FloatType, optional): Result type, default is 'float64'.\n\n"
     "Returns:\n"
@@ -1537,7 +1568,7 @@ static char const doc_bilinear[] = //
     "    a (NDArray): First vector.\n"
     "    b (NDArray): Second vector.\n"
     "    metric_tensor (NDArray): The metric tensor defining the bilinear form.\n"
-    "    dtype (FloatType, optional): Override the presumed input type.\n\n"
+    "    dtype (FloatType, optional): Override the presumed input type name.\n\n"
     "Returns:\n"
     "    float: The bilinear form.\n\n"
     "Equivalent to: `numpy.dot` with a metric tensor.\n"
@@ -1555,7 +1586,7 @@ static char const doc_mahalanobis[] = //
     "    a (NDArray): First vector.\n"
     "    b (NDArray): Second vector.\n"
     "    inverse_covariance (NDArray): The inverse of the covariance matrix.\n"
-    "    dtype (FloatType, optional): Override the presumed input type.\n\n"
+    "    dtype (FloatType, optional): Override the presumed input type name.\n\n"
     "Returns:\n"
     "    float: The Mahalanobis distance.\n\n"
     "Equivalent to: `scipy.spatial.distance.mahalanobis`.\n"
@@ -1588,7 +1619,7 @@ static char const doc_fma[] = //
     "    a (NDArray): First vector.\n"
     "    b (NDArray): Second vector.\n"
     "    c (NDArray): Third vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed numeric type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed numeric type name.\n"
     "    alpha (float, optional): First scale, 1.0 by default.\n"
     "    beta (float, optional): Second scale, 1.0 by default.\n"
     "    out (NDArray, optional): Vector for resulting distances.\n\n"
@@ -1712,8 +1743,8 @@ static PyObject *api_fma(PyObject *self, PyObject *const *args, Py_ssize_t const
     simsimd_kernel_fma_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
     simsimd_metric_kind_t const metric_kind = simsimd_metric_fma_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
-                               (simsimd_metric_punned_t *)&metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError,
@@ -1770,7 +1801,7 @@ static char const doc_wsum[] = //
     "Args:\n"
     "    a (NDArray): First vector.\n"
     "    b (NDArray): Second vector.\n"
-    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed numeric type.\n"
+    "    dtype (Union[IntegralType, FloatType], optional): Override the presumed numeric type name.\n"
     "    alpha (float, optional): First scale, 1.0 by default.\n"
     "    beta (float, optional): Second scale, 1.0 by default.\n"
     "    out (NDArray, optional): Vector for resulting distances.\n\n"
@@ -1888,8 +1919,8 @@ static PyObject *api_wsum(PyObject *self, PyObject *const *args, Py_ssize_t cons
     simsimd_kernel_wsum_punned_t metric = NULL;
     simsimd_capability_t capability = simsimd_cap_serial_k;
     simsimd_metric_kind_t const metric_kind = simsimd_metric_wsum_k;
-    simsimd_find_metric_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
-                               (simsimd_metric_punned_t *)&metric, &capability);
+    simsimd_find_kernel_punned(metric_kind, dtype, static_capabilities, simsimd_cap_any_k,
+                               (simsimd_kernel_punned_t *)&metric, &capability);
     if (!metric) {
         PyErr_Format( //
             PyExc_LookupError,
@@ -2046,6 +2077,10 @@ PyMODINIT_FUNC PyInit_simsimd(void) {
 
     m = PyModule_Create(&simsimd_module);
     if (m == NULL) return NULL;
+
+#ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
 
     // Add version metadata
     {

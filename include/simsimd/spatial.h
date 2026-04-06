@@ -41,75 +41,75 @@ extern "C" {
  *  By default they use 32-bit arithmetic, unless the arguments themselves contain 64-bit floats.
  *  For double-precision computation check out the "*_accurate" variants of those "*_serial" functions.
  */
-SIMSIMD_PUBLIC void simsimd_l2_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const*, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f64_serial(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_serial(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_serial(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_bf16_serial(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_i8_serial(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_u8_serial(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  Double-precision serial backends for all numeric types.
  *  For single-precision computation check out the "*_serial" counterparts of those "*_accurate" functions.
  */
-SIMSIMD_PUBLIC void simsimd_l2_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_accurate(simsimd_bf16_t const* a, simsimd_bf16_t const*, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_accurate(simsimd_bf16_t const* a, simsimd_bf16_t const*, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_accurate(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_accurate(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_accurate(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_accurate(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for Arm NEON, mostly using 32-bit arithmetic over 128-bit words.
  *  By far the most portable backend, covering most Arm v8 devices, over a billion phones, and almost all
  *  server CPUs produced before 2023.
  */
-SIMSIMD_PUBLIC void simsimd_l2_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f64_neon(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_neon(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_neon(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_bf16_neon(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_i8_neon(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_u8_neon(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for Arm SVE, mostly using 32-bit arithmetic over variable-length platform-defined word sizes.
  *  Designed for Arm Graviton 3, Microsoft Cobalt, as well as Nvidia Grace and newer Ampere Altra CPUs.
  */
-SIMSIMD_PUBLIC void simsimd_l2_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_sve(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_sve(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_bf16_sve(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for AVX2 CPUs of Haswell generation and newer, using 32-bit arithmetic over 256-bit words.
  *  First demonstrated in 2011, at least one Haswell-based processor was still being sold in 2022 — the Pentium G3420.
@@ -117,60 +117,70 @@ SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const* a, simsimd_f64_t co
  *  On other hand, there is no need to implement AVX2 versions of `f32` and `f64` functions, as those are
  *  properly vectorized by recent compilers.
  */
-SIMSIMD_PUBLIC void simsimd_l2_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_i8_haswell(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_u8_haswell(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_haswell(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_bf16_haswell(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_haswell(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f64_haswell(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for AVX512 CPUs of Skylake generation and newer, using 32-bit arithmetic over 512-bit words.
  *  Skylake was launched in 2015, and discontinued in 2019. Skylake had support for F, CD, VL, DQ, and BW extensions,
  *  as well as masked operations. This is enough to supersede auto-vectorization on `f32` and `f64` types.
+ * 
+ *  Sadly, we can't effectively interleave different kinds of arithmetic instructions to utilize more ports:
+ * 
+ *  > Like Intel server architectures since Skylake-X, SPR cores feature two 512-bit FMA units, and organize them in a similar fashion. 
+ *  > One 512-bit FMA unit is created by fusing two 256-bit ones on port 0 and port 1. The other is added to port 5, as a server-specific 
+ *  > core extension. The FMA units on port 0 and 1 are configured into 2×256-bit or 1×512-bit mode depending on whether 512-bit FMA 
+ *  > instructions are present in the scheduler. That means a mix of 256-bit and 512-bit FMA instructions will not achieve higher IPC 
+ *  > than executing 512-bit instructions alone.
+ * 
+ *  Source: https://chipsandcheese.com/p/a-peek-at-sapphire-rapids
  */
-SIMSIMD_PUBLIC void simsimd_l2_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f32_skylake(simsimd_f32_t const* a, simsimd_f32_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f64_skylake(simsimd_f64_t const* a, simsimd_f64_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for AVX512 CPUs of Ice Lake generation and newer, using mixed arithmetic over 512-bit words.
  *  Ice Lake added VNNI, VPOPCNTDQ, IFMA, VBMI, VAES, GFNI, VBMI2, BITALG, VPCLMULQDQ, and other extensions for integral operations.
  *  Sapphire Rapids added tiled matrix operations, but we are most interested in the new mixed-precision FMA instructions.
  */
-SIMSIMD_PUBLIC void simsimd_l2_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_l2sq_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
-SIMSIMD_PUBLIC void simsimd_cos_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_l2_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_i4x2_ice(simsimd_i4x2_t const* a, simsimd_i4x2_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_i8_ice(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_u8_ice(simsimd_u8_t const* a, simsimd_u8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_bf16_genoa(simsimd_bf16_t const* a, simsimd_bf16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_l2sq_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
+SIMSIMD_PUBLIC void simsimd_cos_f16_sapphire(simsimd_f16_t const* a, simsimd_f16_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 
 /*  SIMD-powered backends for AVX-INT8-VNNI extensions on Xeon 6 CPUs, including Sierra Forest and Granite Rapids.
  *  The packs many "efficiency" cores into a single socket, avoiding heavy 512-bit operations, and focusing on 256-bit ones.
  */
-SIMSIMD_PUBLIC void simsimd_cos_i8_sierra(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* d);
+SIMSIMD_PUBLIC void simsimd_cos_i8_sierra(simsimd_i8_t const* a, simsimd_i8_t const* b, simsimd_size_t n, simsimd_distance_t* result);
 // clang-format on
 
 #define SIMSIMD_MAKE_L2SQ(name, input_type, accumulator_type, load_and_convert)                                 \
@@ -253,8 +263,8 @@ SIMSIMD_MAKE_L2(accurate, bf16, f64, SIMSIMD_BF16_TO_F32)   // simsimd_l2_bf16_a
 #if _SIMSIMD_TARGET_ARM
 #if SIMSIMD_TARGET_NEON
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.2-a+simd")
-#pragma clang attribute push(__attribute__((target("arch=armv8.2-a+simd"))), apply_to = function)
+#pragma GCC target("arch=armv8-a+simd")
+#pragma clang attribute push(__attribute__((target("arch=armv8-a+simd"))), apply_to = function)
 
 SIMSIMD_INTERNAL simsimd_f32_t _simsimd_sqrt_f32_neon(simsimd_f32_t x) {
     return vget_lane_f32(vsqrt_f32(vdup_n_f32(x)), 0);
@@ -269,7 +279,7 @@ SIMSIMD_INTERNAL simsimd_distance_t _simsimd_cos_normalize_f32_neon(simsimd_f32_
     simsimd_f32_t squares_arr[2] = {a2, b2};
     float32x2_t squares = vld1_f32(squares_arr);
     // Unlike x86, Arm NEON manuals don't explicitly mention the accuracy of their `rsqrt` approximation.
-    // Third party research suggests, that it's less accurate than SSE instructions, having an error of 1.5*2^-12.
+    // Third-party research suggests that it's less accurate than SSE instructions, having an error of 1.5*2^-12.
     // One or two rounds of Newton-Raphson refinement are recommended to improve the accuracy.
     // https://github.com/lighttransport/embree-aarch64/issues/24
     // https://github.com/lighttransport/embree-aarch64/blob/3f75f8cb4e553d13dced941b5fefd4c826835a6b/common/math/math.h#L137-L145
@@ -291,7 +301,7 @@ SIMSIMD_INTERNAL simsimd_distance_t _simsimd_cos_normalize_f64_neon(simsimd_f64_
     float64x2_t squares = vld1q_f64(squares_arr);
 
     // Unlike x86, Arm NEON manuals don't explicitly mention the accuracy of their `rsqrt` approximation.
-    // Third party research suggests, that it's less accurate than SSE instructions, having an error of 1.5*2^-12.
+    // Third-party research suggests that it's less accurate than SSE instructions, having an error of 1.5*2^-12.
     // One or two rounds of Newton-Raphson refinement are recommended to improve the accuracy.
     // https://github.com/lighttransport/embree-aarch64/issues/24
     // https://github.com/lighttransport/embree-aarch64/blob/3f75f8cb4e553d13dced941b5fefd4c826835a6b/common/math/math.h#L137-L145
@@ -595,10 +605,10 @@ SIMSIMD_PUBLIC void simsimd_l2sq_i8_neon(simsimd_i8_t const *a, simsimd_i8_t con
         uint8x16_t d_vec = vreinterpretq_u8_s8(vabdq_s8(a_vec, b_vec));
         d2_vec = vdotq_u32(d2_vec, d_vec, d_vec);
     }
-    uint32_t d2 = vaddvq_u32(d2_vec);
+    simsimd_u32_t d2 = vaddvq_u32(d2_vec);
     for (; i < n; ++i) {
-        int32_t n = (int32_t)a[i] - b[i];
-        d2 += (uint32_t)(n * n);
+        simsimd_i32_t n = (simsimd_i32_t)a[i] - b[i];
+        d2 += (simsimd_u32_t)(n * n);
     }
     *result = d2;
 }
@@ -693,9 +703,9 @@ SIMSIMD_PUBLIC void simsimd_cos_i8_neon(simsimd_i8_t const *a, simsimd_i8_t cons
     //          products_high_vec = vmmlaq_s32(products_high_vec, v_vec, y_w_vecs.val[1]);
     //      }
     //      int32x4_t products_vec = vaddq_s32(products_high_vec, products_low_vec);
-    //      int32_t a2 = products_vec[0];
-    //      int32_t ab = products_vec[1];
-    //      int32_t b2 = products_vec[3];
+    //      simsimd_i32_t a2 = products_vec[0];
+    //      simsimd_i32_t ab = products_vec[1];
+    //      simsimd_i32_t b2 = products_vec[3];
     //
     // That solution is elegant, but it requires the additional `+i8mm` extension and is currently slower,
     // at least on AWS Graviton 3.
@@ -709,13 +719,13 @@ SIMSIMD_PUBLIC void simsimd_cos_i8_neon(simsimd_i8_t const *a, simsimd_i8_t cons
         a2_vec = vdotq_s32(a2_vec, a_vec, a_vec);
         b2_vec = vdotq_s32(b2_vec, b_vec, b_vec);
     }
-    int32_t ab = vaddvq_s32(ab_vec);
-    int32_t a2 = vaddvq_s32(a2_vec);
-    int32_t b2 = vaddvq_s32(b2_vec);
+    simsimd_i32_t ab = vaddvq_s32(ab_vec);
+    simsimd_i32_t a2 = vaddvq_s32(a2_vec);
+    simsimd_i32_t b2 = vaddvq_s32(b2_vec);
 
     // Take care of the tail:
     for (; i < n; ++i) {
-        int32_t ai = a[i], bi = b[i];
+        simsimd_i32_t ai = a[i], bi = b[i];
         ab += ai * bi, a2 += ai * ai, b2 += bi * bi;
     }
 
@@ -737,10 +747,10 @@ SIMSIMD_PUBLIC void simsimd_l2sq_u8_neon(simsimd_u8_t const *a, simsimd_u8_t con
         uint8x16_t d_vec = vabdq_u8(a_vec, b_vec);
         d2_vec = vdotq_u32(d2_vec, d_vec, d_vec);
     }
-    uint32_t d2 = vaddvq_u32(d2_vec);
+    simsimd_u32_t d2 = vaddvq_u32(d2_vec);
     for (; i < n; ++i) {
-        int32_t n = (int32_t)a[i] - b[i];
-        d2 += (uint32_t)(n * n);
+        simsimd_i32_t n = (simsimd_i32_t)a[i] - b[i];
+        d2 += (simsimd_u32_t)(n * n);
     }
     *result = d2;
 }
@@ -759,13 +769,13 @@ SIMSIMD_PUBLIC void simsimd_cos_u8_neon(simsimd_u8_t const *a, simsimd_u8_t cons
         a2_vec = vdotq_u32(a2_vec, a_vec, a_vec);
         b2_vec = vdotq_u32(b2_vec, b_vec, b_vec);
     }
-    uint32_t ab = vaddvq_u32(ab_vec);
-    uint32_t a2 = vaddvq_u32(a2_vec);
-    uint32_t b2 = vaddvq_u32(b2_vec);
+    simsimd_u32_t ab = vaddvq_u32(ab_vec);
+    simsimd_u32_t a2 = vaddvq_u32(a2_vec);
+    simsimd_u32_t b2 = vaddvq_u32(b2_vec);
 
     // Take care of the tail:
     for (; i < n; ++i) {
-        uint32_t ai = a[i], bi = b[i];
+        simsimd_u32_t ai = a[i], bi = b[i];
         ab += ai * bi, a2 += ai * ai, b2 += bi * bi;
     }
 
@@ -799,6 +809,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f32_sve(simsimd_f32_t const *a, simsimd_f32_t c
         i += svcntw();
     } while (i < n);
     simsimd_f32_t d2 = svaddv_f32(svptrue_b32(), d2_vec);
+    SIMSIMD_UNPOISON(&d2, sizeof(d2));
     *result = d2;
 }
 
@@ -821,6 +832,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f32_sve(simsimd_f32_t const *a, simsimd_f32_t co
     simsimd_f32_t ab = svaddv_f32(svptrue_b32(), ab_vec);
     simsimd_f32_t a2 = svaddv_f32(svptrue_b32(), a2_vec);
     simsimd_f32_t b2 = svaddv_f32(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f64_neon(ab, a2, b2);
 }
 
@@ -842,6 +856,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f64_sve(simsimd_f64_t const *a, simsimd_f64_t c
         i += svcntd();
     } while (i < n);
     simsimd_f64_t d2 = svaddv_f64(svptrue_b32(), d2_vec);
+    SIMSIMD_UNPOISON(&d2, sizeof(d2));
     *result = d2;
 }
 
@@ -864,6 +879,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const *a, simsimd_f64_t co
     simsimd_f64_t ab = svaddv_f64(svptrue_b32(), ab_vec);
     simsimd_f64_t a2 = svaddv_f64(svptrue_b32(), a2_vec);
     simsimd_f64_t b2 = svaddv_f64(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f64_neon(ab, a2, b2);
 }
 
@@ -896,6 +914,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f16_sve(simsimd_f16_t const *a_enum, simsimd_f1
         i += svcnth();
     } while (i < n);
     simsimd_f16_for_arm_simd_t d2_f16 = svaddv_f16(svptrue_b16(), d2_vec);
+    SIMSIMD_UNPOISON(&d2_f16, sizeof(d2_f16));
     *result = d2_f16;
 }
 
@@ -920,6 +939,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f16_sve(simsimd_f16_t const *a_enum, simsimd_f16
     simsimd_f16_for_arm_simd_t ab = svaddv_f16(svptrue_b16(), ab_vec);
     simsimd_f16_for_arm_simd_t a2 = svaddv_f16(svptrue_b16(), a2_vec);
     simsimd_f16_for_arm_simd_t b2 = svaddv_f16(svptrue_b16(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f32_neon(ab, a2, b2);
 }
 
@@ -959,11 +981,15 @@ SIMSIMD_PUBLIC void simsimd_l2sq_bf16_sve(simsimd_bf16_t const *a_enum, simsimd_
 
         svfloat32_t a_minus_b_low_vec = svsub_f32_x(pg_low_vec, a_low_vec, b_low_vec);
         svfloat32_t a_minus_b_high_vec = svsub_f32_x(pg_high_vec, a_high_vec, b_high_vec);
-        d2_low_vec = svmla_f32_x(pg_vec, d2_low_vec, a_minus_b_low_vec, a_minus_b_low_vec);
-        d2_high_vec = svmla_f32_x(pg_vec, d2_high_vec, a_minus_b_low_vec, a_minus_b_low_vec);
+        d2_low_vec = svmla_f32_x(pg_low_vec, d2_low_vec, a_minus_b_low_vec, a_minus_b_low_vec);
+        d2_high_vec = svmla_f32_x(pg_high_vec, d2_high_vec, a_minus_b_high_vec, a_minus_b_high_vec);
         i += svcnth();
     } while (i < n);
-    simsimd_f32_t d2 = svaddv_f32(svptrue_b32(), d2_low_vec) + svaddv_f32(svptrue_b32(), d2_high_vec);
+    simsimd_f32_t d2_low = svaddv_f32(svptrue_b32(), d2_low_vec);
+    simsimd_f32_t d2_high = svaddv_f32(svptrue_b32(), d2_high_vec);
+    SIMSIMD_UNPOISON(&d2_low, sizeof(d2_low));
+    SIMSIMD_UNPOISON(&d2_high, sizeof(d2_high));
+    simsimd_f32_t d2 = d2_low + d2_high;
     *result = d2;
 }
 
@@ -988,6 +1014,9 @@ SIMSIMD_PUBLIC void simsimd_cos_bf16_sve(simsimd_bf16_t const *a_enum, simsimd_b
     simsimd_f32_t ab = svaddv_f32(svptrue_b32(), ab_vec);
     simsimd_f32_t a2 = svaddv_f32(svptrue_b32(), a2_vec);
     simsimd_f32_t b2 = svaddv_f32(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f32_neon(ab, a2, b2);
 }
 
@@ -1050,7 +1079,7 @@ SIMSIMD_INTERNAL simsimd_distance_t _simsimd_cos_normalize_f32_haswell(simsimd_f
     // Load the squares into an __m128 register for single-precision floating-point operations
     __m128 squares = _mm_set_ps(a2, b2, a2, b2); // We replicate to make use of full register
 
-    // Compute the reciprocal square root of the squares using _mm_rsqrt_ps (single-precision)
+    // Compute the reciprocal square root of the squares using `_mm_rsqrt_ps` (single-precision)
     __m128 rsqrts = _mm_rsqrt_ps(squares);
 
     // Perform one iteration of Newton-Raphson refinement to improve the precision of rsqrt:
@@ -1255,7 +1284,7 @@ SIMSIMD_PUBLIC void simsimd_cos_i8_haswell(simsimd_i8_t const *a, simsimd_i8_t c
     //      __m256i ab_i16_vec = _mm256_maddubs_epi16(a_i8_abs_vec, b_i8_flipped_vec);
     //
     // The problem with this approach, however, is the `-128` value in the second vector.
-    // Flipping it's sign will do nothing, and the result will be incorrect.
+    // Flipping its sign will do nothing, and the result will be incorrect.
     // This can easily lead to noticeable numerical errors in the final result.
     simsimd_size_t i = 0;
     for (; i + 32 <= n; i += 32) {
@@ -1354,7 +1383,7 @@ SIMSIMD_PUBLIC void simsimd_cos_u8_haswell(simsimd_u8_t const *a, simsimd_u8_t c
     //      __m256i ab_i16_vec = _mm256_maddubs_epi16(a_i8_abs_vec, b_i8_flipped_vec);
     //
     // The problem with this approach, however, is the `-128` value in the second vector.
-    // Flipping it's sign will do nothing, and the result will be incorrect.
+    // Flipping its sign will do nothing, and the result will be incorrect.
     // This can easily lead to noticeable numerical errors in the final result.
     simsimd_size_t i = 0;
     for (; i + 32 <= n; i += 32) {
@@ -1545,7 +1574,7 @@ SIMSIMD_INTERNAL simsimd_distance_t _simsimd_cos_normalize_f64_skylake(simsimd_f
     // https://web.archive.org/web/20210208132927/http://assemblyrequired.crashworks.org/timing-square-root/
     // The maximum relative error for this approximation is less than 2^-14, which is 6x lower than
     // for single-precision floats in the `_simsimd_cos_normalize_f64_haswell` implementation.
-    // Mysteriously, MSVC has no `_mm_rsqrt14_pd` intrinsic, but has it's masked variants,
+    // Mysteriously, MSVC has no `_mm_rsqrt14_pd` intrinsic, but has its masked variants,
     // so let's use `_mm_maskz_rsqrt14_pd(0xFF, ...)` instead.
     __m128d squares = _mm_set_pd(a2, b2);
     __m128d rsqrts = _mm_maskz_rsqrt14_pd(0xFF, squares);
@@ -1873,7 +1902,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_i8_ice(simsimd_i8_t const *a, simsimd_i8_t cons
     __m512i a_i16_vec, b_i16_vec, d_i16s_vec;
 
 simsimd_l2sq_i8_ice_cycle:
-    if (n < 32) { // TODO: Avoid eaarly i16 upcast to step through 64 values at a time
+    if (n < 32) { // TODO: Avoid early i16 upcast to step through 64 values at a time
         __mmask32 mask = (__mmask32)_bzhi_u32(0xFFFFFFFF, n);
         a_i16_vec = _mm512_cvtepi8_epi16(_mm256_maskz_loadu_epi8(mask, a));
         b_i16_vec = _mm512_cvtepi8_epi16(_mm256_maskz_loadu_epi8(mask, b));
@@ -2268,6 +2297,7 @@ simsimd_cos_i4x2_ice_cycle:
     int ab = _mm512_reduce_add_epi32(_mm512_add_epi32(ab_i32_low_vec, ab_i32_high_vec));
     unsigned short a2_u16[32], b2_u16[32];
     _mm512_storeu_si512(a2_u16, _mm512_add_epi16(a2_u16_low_vec, a2_u16_high_vec));
+    _mm512_storeu_si512(b2_u16, _mm512_add_epi16(b2_u16_low_vec, b2_u16_high_vec));
     unsigned int a2 = 0, b2 = 0;
     for (int i = 0; i < 32; ++i) a2 += a2_u16[i], b2 += b2_u16[i];
     *result = _simsimd_cos_normalize_f32_haswell(ab, a2, b2);
@@ -2279,8 +2309,8 @@ simsimd_cos_i4x2_ice_cycle:
 
 #if SIMSIMD_TARGET_SIERRA
 #pragma GCC push_options
-#pragma GCC target("avx2", "bmi2", "avx2vnni")
-#pragma clang attribute push(__attribute__((target("avx2,bmi2,avx2vnni"))), apply_to = function)
+#pragma GCC target("avx2", "bmi2", "avxvnni")
+#pragma clang attribute push(__attribute__((target("avx2,bmi2,avxvnni"))), apply_to = function)
 
 SIMSIMD_PUBLIC void simsimd_cos_i8_sierra(simsimd_i8_t const *a, simsimd_i8_t const *b, simsimd_size_t n,
                                           simsimd_distance_t *result) {

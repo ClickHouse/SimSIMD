@@ -31,49 +31,25 @@ _MetricType = Literal[
     "wsum",
 ]
 _IntegralType = Literal[
-    # Booleans
-    "c",
-    "b8",
+    "bin8",
     # Signed integers
-    "b",
-    "i8",
     "int8",
-    "h",
-    "i16",
     "int16",
-    "i",
-    "l",
-    "i32",
     "int32",
-    "q",
-    "i64",
     "int64",
     # Unsigned integers
-    "B",
-    "u8",
     "uint8",
-    "H",
-    "u16",
     "uint16",
-    "I",
-    "L",
-    "u32",
     "uint32",
-    "Q",
-    "u64",
     "uint64",
 ]
 _FloatType = Literal[
-    "f",
     "f32",
     "float32",
-    "e",
     "f16",
     "float16",
-    "d",
     "f64",
     "float64",
-    "bh",  #! Not supported by NumPy
     "bf16",  #! Not supported by NumPy
     "bfloat16",  #! Not supported by NumPy
 ]
@@ -118,7 +94,7 @@ def cdist(
     threads: int = 1,
     dtype: Optional[Union[_IntegralType, _FloatType, _ComplexType]] = None,
     out: Optional[_BufferType] = None,
-    out_dtype: Union[_FloatType, _ComplexType] = "d",
+    out_dtype: Optional[Union[_FloatType, _ComplexType]] = None,
 ) -> Optional[Union[float, complex, DistancesTensor]]: ...
 
 # ---------------------------------------------------------------------
@@ -134,7 +110,7 @@ def inner(
     dtype: Optional[Union[_FloatType, _ComplexType]] = None,
     *,
     out: Optional[_BufferType] = None,
-    out_dtype: Union[_FloatType, _ComplexType] = "d",
+    out_dtype: Optional[Union[_FloatType, _ComplexType]] = None,
 ) -> Optional[Union[float, complex, DistancesTensor]]: ...
 
 # Dot product, similar to: `numpy.dot`.
@@ -296,7 +272,7 @@ def fma(
 ) -> Optional[DistancesTensor]: ...
 
 # Vector-vector element-wise weighted sum.
-def wum(
+def wsum(
     a: _BufferType,
     b: _BufferType,
     /,
