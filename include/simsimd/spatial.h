@@ -809,6 +809,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f32_sve(simsimd_f32_t const *a, simsimd_f32_t c
         i += svcntw();
     } while (i < n);
     simsimd_f32_t d2 = svaddv_f32(svptrue_b32(), d2_vec);
+    SIMSIMD_UNPOISON(&d2, sizeof(d2));
     *result = d2;
 }
 
@@ -831,6 +832,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f32_sve(simsimd_f32_t const *a, simsimd_f32_t co
     simsimd_f32_t ab = svaddv_f32(svptrue_b32(), ab_vec);
     simsimd_f32_t a2 = svaddv_f32(svptrue_b32(), a2_vec);
     simsimd_f32_t b2 = svaddv_f32(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f64_neon(ab, a2, b2);
 }
 
@@ -852,6 +856,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f64_sve(simsimd_f64_t const *a, simsimd_f64_t c
         i += svcntd();
     } while (i < n);
     simsimd_f64_t d2 = svaddv_f64(svptrue_b32(), d2_vec);
+    SIMSIMD_UNPOISON(&d2, sizeof(d2));
     *result = d2;
 }
 
@@ -874,6 +879,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f64_sve(simsimd_f64_t const *a, simsimd_f64_t co
     simsimd_f64_t ab = svaddv_f64(svptrue_b32(), ab_vec);
     simsimd_f64_t a2 = svaddv_f64(svptrue_b32(), a2_vec);
     simsimd_f64_t b2 = svaddv_f64(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f64_neon(ab, a2, b2);
 }
 
@@ -906,6 +914,7 @@ SIMSIMD_PUBLIC void simsimd_l2sq_f16_sve(simsimd_f16_t const *a_enum, simsimd_f1
         i += svcnth();
     } while (i < n);
     simsimd_f16_for_arm_simd_t d2_f16 = svaddv_f16(svptrue_b16(), d2_vec);
+    SIMSIMD_UNPOISON(&d2_f16, sizeof(d2_f16));
     *result = d2_f16;
 }
 
@@ -930,6 +939,9 @@ SIMSIMD_PUBLIC void simsimd_cos_f16_sve(simsimd_f16_t const *a_enum, simsimd_f16
     simsimd_f16_for_arm_simd_t ab = svaddv_f16(svptrue_b16(), ab_vec);
     simsimd_f16_for_arm_simd_t a2 = svaddv_f16(svptrue_b16(), a2_vec);
     simsimd_f16_for_arm_simd_t b2 = svaddv_f16(svptrue_b16(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f32_neon(ab, a2, b2);
 }
 
@@ -973,7 +985,11 @@ SIMSIMD_PUBLIC void simsimd_l2sq_bf16_sve(simsimd_bf16_t const *a_enum, simsimd_
         d2_high_vec = svmla_f32_m(pg_high_vec, d2_high_vec, a_minus_b_high_vec, a_minus_b_high_vec);
         i += svcnth();
     } while (i < n);
-    simsimd_f32_t d2 = svaddv_f32(svptrue_b32(), d2_low_vec) + svaddv_f32(svptrue_b32(), d2_high_vec);
+    simsimd_f32_t d2_low = svaddv_f32(svptrue_b32(), d2_low_vec);
+    simsimd_f32_t d2_high = svaddv_f32(svptrue_b32(), d2_high_vec);
+    SIMSIMD_UNPOISON(&d2_low, sizeof(d2_low));
+    SIMSIMD_UNPOISON(&d2_high, sizeof(d2_high));
+    simsimd_f32_t d2 = d2_low + d2_high;
     *result = d2;
 }
 
@@ -998,6 +1014,9 @@ SIMSIMD_PUBLIC void simsimd_cos_bf16_sve(simsimd_bf16_t const *a_enum, simsimd_b
     simsimd_f32_t ab = svaddv_f32(svptrue_b32(), ab_vec);
     simsimd_f32_t a2 = svaddv_f32(svptrue_b32(), a2_vec);
     simsimd_f32_t b2 = svaddv_f32(svptrue_b32(), b2_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
+    SIMSIMD_UNPOISON(&a2, sizeof(a2));
+    SIMSIMD_UNPOISON(&b2, sizeof(b2));
     *result = _simsimd_cos_normalize_f32_neon(ab, a2, b2);
 }
 
