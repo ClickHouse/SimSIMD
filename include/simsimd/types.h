@@ -21,6 +21,22 @@
 #define _SIMSIMD_DEFINED_LINUX 1
 #endif
 
+// MemorySanitizer does not instrument ARM SVE intrinsics — there is zero handling of
+// `aarch64_sve_*` intrinsics in LLVM's MemorySanitizer.cpp (as of LLVM 20), only a
+// file-level "FIXME: This sanitizer does not yet handle scalable vectors".
+// This causes false positives when SVE reductions like `svaddv` produce scalar results
+// that MSan considers uninitialized. We unpoison these scalars explicitly.
+// See also: https://github.com/llvm/llvm-project/pull/165028
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#define SIMSIMD_UNPOISON(ptr, size) __msan_unpoison((ptr), (size))
+#endif
+#endif
+#ifndef SIMSIMD_UNPOISON
+#define SIMSIMD_UNPOISON(ptr, size) (void)(ptr), (void)(size)
+#endif
+
 // Annotation for the public API symbols:
 //
 // - `SIMSIMD_PUBLIC` is used for functions that are part of the public API.

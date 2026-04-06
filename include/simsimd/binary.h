@@ -213,6 +213,7 @@ SIMSIMD_PUBLIC void simsimd_hamming_b8_sve(simsimd_b8_t const *a, simsimd_b8_t c
             ++cycle;
         } while (i < n_words && cycle < 31);
         differences += svaddv_u8(all_vec, differences_cycle_vec);
+        SIMSIMD_UNPOISON(&differences, sizeof(differences));
         differences_cycle_vec = svdup_n_u8(0);
         cycle = 0; // Reset the cycle counter.
     }
@@ -249,8 +250,10 @@ SIMSIMD_PUBLIC void simsimd_jaccard_b8_sve(simsimd_b8_t const *a, simsimd_b8_t c
             ++cycle;
         } while (i < n_words && cycle < 31);
         intersection += svaddv_u8(all_vec, intersection_cycle_vec);
+        SIMSIMD_UNPOISON(&intersection, sizeof(intersection));
         intersection_cycle_vec = svdup_n_u8(0);
         union_ += svaddv_u8(all_vec, union_cycle_vec);
+        SIMSIMD_UNPOISON(&union_, sizeof(union_));
         union_cycle_vec = svdup_n_u8(0);
         cycle = 0; // Reset the cycle counter.
     }

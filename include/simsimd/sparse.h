@@ -1283,6 +1283,7 @@ SIMSIMD_PUBLIC void simsimd_spdot_counts_u16_sve2(                  //
     }
     results[0] = (simsimd_distance_t)intersection_size;
     results[1] = svaddv_s64(svptrue_b64(), product_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 #pragma clang attribute pop
@@ -1370,6 +1371,7 @@ SIMSIMD_PUBLIC void simsimd_spdot_weights_u16_sve2(                   //
     }
     results[0] = (simsimd_distance_t)intersection_size;
     results[1] = svaddv_f32(svptrue_b32(), product_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 #pragma clang attribute pop

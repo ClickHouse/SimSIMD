@@ -652,7 +652,9 @@ SIMSIMD_PUBLIC void simsimd_dot_f32_sve(simsimd_f32_t const *a_scalars, simsimd_
         ab_vec = svmla_f32_x(pg_vec, ab_vec, a_vec, b_vec);
         idx_scalars += svcntw();
     } while (idx_scalars < count_scalars);
-    *result = svaddv_f32(svptrue_b32(), ab_vec);
+    simsimd_distance_t reduced = svaddv_f32(svptrue_b32(), ab_vec);
+    SIMSIMD_UNPOISON(&reduced, sizeof(reduced));
+    *result = reduced;
 }
 
 SIMSIMD_PUBLIC void simsimd_dot_f32c_sve(simsimd_f32c_t const *a_pairs, simsimd_f32c_t const *b_pairs,
@@ -676,6 +678,7 @@ SIMSIMD_PUBLIC void simsimd_dot_f32c_sve(simsimd_f32c_t const *a_pairs, simsimd_
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f32(svptrue_b32(), ab_real_vec);
     results[1] = svaddv_f32(svptrue_b32(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 SIMSIMD_PUBLIC void simsimd_vdot_f32c_sve(simsimd_f32c_t const *a_pairs, simsimd_f32c_t const *b_pairs,
@@ -699,6 +702,7 @@ SIMSIMD_PUBLIC void simsimd_vdot_f32c_sve(simsimd_f32c_t const *a_pairs, simsimd
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f32(svptrue_b32(), ab_real_vec);
     results[1] = svaddv_f32(svptrue_b32(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 SIMSIMD_PUBLIC void simsimd_dot_f64_sve(simsimd_f64_t const *a_scalars, simsimd_f64_t const *b_scalars,
@@ -712,7 +716,9 @@ SIMSIMD_PUBLIC void simsimd_dot_f64_sve(simsimd_f64_t const *a_scalars, simsimd_
         ab_vec = svmla_f64_x(pg_vec, ab_vec, a_vec, b_vec);
         idx_scalars += svcntd();
     } while (idx_scalars < count_scalars);
-    *result = svaddv_f64(svptrue_b32(), ab_vec);
+    simsimd_distance_t reduced = svaddv_f64(svptrue_b32(), ab_vec);
+    SIMSIMD_UNPOISON(&reduced, sizeof(reduced));
+    *result = reduced;
 }
 
 SIMSIMD_PUBLIC void simsimd_dot_f64c_sve(simsimd_f64c_t const *a_pairs, simsimd_f64c_t const *b_pairs,
@@ -736,6 +742,7 @@ SIMSIMD_PUBLIC void simsimd_dot_f64c_sve(simsimd_f64c_t const *a_pairs, simsimd_
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f64(svptrue_b64(), ab_real_vec);
     results[1] = svaddv_f64(svptrue_b64(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 SIMSIMD_PUBLIC void simsimd_vdot_f64c_sve(simsimd_f64c_t const *a_pairs, simsimd_f64c_t const *b_pairs,
@@ -759,6 +766,7 @@ SIMSIMD_PUBLIC void simsimd_vdot_f64c_sve(simsimd_f64c_t const *a_pairs, simsimd
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f64(svptrue_b64(), ab_real_vec);
     results[1] = svaddv_f64(svptrue_b64(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 #pragma clang attribute pop
@@ -780,6 +788,7 @@ SIMSIMD_PUBLIC void simsimd_dot_f16_sve(simsimd_f16_t const *a_scalars, simsimd_
         idx_scalars += svcnth();
     } while (idx_scalars < count_scalars);
     simsimd_f16_for_arm_simd_t ab = svaddv_f16(svptrue_b16(), ab_vec);
+    SIMSIMD_UNPOISON(&ab, sizeof(ab));
     *result = ab;
 }
 
@@ -804,6 +813,7 @@ SIMSIMD_PUBLIC void simsimd_dot_f16c_sve(simsimd_f16c_t const *a_pairs, simsimd_
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f16(svptrue_b16(), ab_real_vec);
     results[1] = svaddv_f16(svptrue_b16(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 SIMSIMD_PUBLIC void simsimd_vdot_f16c_sve(simsimd_f16c_t const *a_pairs, simsimd_f16c_t const *b_pairs,
@@ -827,6 +837,7 @@ SIMSIMD_PUBLIC void simsimd_vdot_f16c_sve(simsimd_f16c_t const *a_pairs, simsimd
     } while (idx_pairs < count_pairs);
     results[0] = svaddv_f16(svptrue_b16(), ab_real_vec);
     results[1] = svaddv_f16(svptrue_b16(), ab_imag_vec);
+    SIMSIMD_UNPOISON(results, 2 * sizeof(simsimd_distance_t));
 }
 
 #pragma clang attribute pop
