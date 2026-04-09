@@ -65,6 +65,7 @@
 #endif
 
 #include <simsimd/simsimd.h>
+#include <stdatomic.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,11 +75,14 @@ extern "C" {
 // If no metric is found, it returns NaN. We can obtain NaN by dividing 0.0 by 0.0, but that annoys
 // the MSVC compiler. Instead we can directly write-in the signaling NaN (0x7FF0000000000001)
 // or the qNaN (0x7FF8000000000000).
+//
+// cached_metric is _Atomic to prevent a data race on lazy initialization.
 #define SIMSIMD_DECLARATION_DENSE(name, extension)                                                                    \
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(simsimd_##extension##_t const *a,                               \
                                                       simsimd_##extension##_t const *b, simsimd_size_t n,             \
                                                       simsimd_distance_t *results) {                                  \
-        static simsimd_metric_dense_punned_t metric = 0;                                                              \
+        static _Atomic(simsimd_metric_dense_punned_t) cached_metric = 0;                                              \
+        simsimd_metric_dense_punned_t metric = cached_metric;                                                         \
         if (metric == 0) {                                                                                            \
             simsimd_capability_t used_capability;                                                                     \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,                   \
@@ -88,16 +92,18 @@ extern "C" {
                 *(simsimd_u64_t *)results = 0x7FF0000000000001ull;                                                    \
                 return;                                                                                               \
             }                                                                                                         \
+            cached_metric = metric;                                                                                   \
         }                                                                                                             \
         metric(a, b, n, results);                                                                                     \
-        SIMSIMD_UNPOISON(results, sizeof(simsimd_distance_t));                                                          \
+        SIMSIMD_UNPOISON(results, sizeof(simsimd_distance_t));                                                         \
     }
 
 #define SIMSIMD_DECLARATION_SPARSE(name, extension, type)                                                       \
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(simsimd_##type##_t const *a, simsimd_##type##_t const *b, \
                                                       simsimd_size_t a_length, simsimd_size_t b_length,         \
                                                       simsimd_distance_t *result) {                             \
-        static simsimd_metric_sparse_punned_t metric = 0;                                                       \
+        static _Atomic(simsimd_metric_sparse_punned_t) cached_metric = 0;                                       \
+        simsimd_metric_sparse_punned_t metric = cached_metric;                                                   \
         if (metric == 0) {                                                                                      \
             simsimd_capability_t used_capability;                                                               \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,             \
@@ -107,6 +113,7 @@ extern "C" {
                 *(simsimd_u64_t *)result = 0x7FF0000000000001ull;                                               \
                 return;                                                                                         \
             }                                                                                                   \
+            cached_metric = metric;                                                                             \
         }                                                                                                       \
         metric(a, b, a_length, b_length, result);                                                               \
         SIMSIMD_UNPOISON(result, sizeof(simsimd_distance_t));                                                    \
@@ -116,7 +123,8 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                                        \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_##extension##_t const *c, \
         simsimd_size_t n, simsimd_distance_t *result) {                                                       \
-        static simsimd_metric_curved_punned_t metric = 0;                                                     \
+        static _Atomic(simsimd_metric_curved_punned_t) cached_metric = 0;                                     \
+        simsimd_metric_curved_punned_t metric = cached_metric;                                                \
         if (metric == 0) {                                                                                    \
             simsimd_capability_t used_capability;                                                             \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,           \
@@ -126,6 +134,7 @@ extern "C" {
                 *(simsimd_u64_t *)result = 0x7FF0000000000001ull;                                             \
                 return;                                                                                       \
             }                                                                                                 \
+            cached_metric = metric;                                                                           \
         }                                                                                                     \
         metric(a, b, c, n, result);                                                                           \
         SIMSIMD_UNPOISON(result, sizeof(simsimd_distance_t));                                                  \
@@ -135,30 +144,34 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                                          \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_##extension##_t const *c,   \
         simsimd_size_t n, simsimd_distance_t alpha, simsimd_distance_t beta, simsimd_##extension##_t *result) { \
-        static simsimd_kernel_fma_punned_t metric = 0;                                                          \
+        static _Atomic(simsimd_kernel_fma_punned_t) cached_metric = 0;                                          \
+        simsimd_kernel_fma_punned_t metric = cached_metric;                                                     \
         if (metric == 0) {                                                                                      \
             simsimd_capability_t used_capability;                                                               \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,             \
                                        simsimd_capabilities(), simsimd_cap_any_k,                               \
                                        (simsimd_kernel_punned_t *)(&metric), &used_capability);                 \
+            cached_metric = metric;                                                                             \
         }                                                                                                       \
         metric(a, b, c, n, alpha, beta, result);                                                                \
-        SIMSIMD_UNPOISON(result, n * sizeof(simsimd_##extension##_t));                                            \
+        SIMSIMD_UNPOISON(result, n * sizeof(simsimd_##extension##_t));                                          \
     }
 
 #define SIMSIMD_DECLARATION_WSUM(name, extension)                                                   \
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                              \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_size_t n,       \
         simsimd_distance_t alpha, simsimd_distance_t beta, simsimd_##extension##_t *result) {       \
-        static simsimd_kernel_wsum_punned_t metric = 0;                                             \
+        static _Atomic(simsimd_kernel_wsum_punned_t) cached_metric = 0;                             \
+        simsimd_kernel_wsum_punned_t metric = cached_metric;                                        \
         if (metric == 0) {                                                                          \
             simsimd_capability_t used_capability;                                                   \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k, \
                                        simsimd_capabilities(), simsimd_cap_any_k,                   \
                                        (simsimd_kernel_punned_t *)(&metric), &used_capability);     \
+            cached_metric = metric;                                                                 \
         }                                                                                           \
         metric(a, b, n, alpha, beta, result);                                                       \
-        SIMSIMD_UNPOISON(result, n * sizeof(simsimd_##extension##_t));                               \
+        SIMSIMD_UNPOISON(result, n * sizeof(simsimd_##extension##_t));                              \
     }
 
 // Dot products
@@ -279,10 +292,12 @@ SIMSIMD_DYNAMIC void simsimd_f32_to_bf16(simsimd_f32_t x, simsimd_bf16_t *result
 
 SIMSIMD_DYNAMIC simsimd_capability_t simsimd_capabilities(void) {
     //! The latency of the CPUID instruction can be over 100 cycles, so we cache the result.
-    static simsimd_capability_t static_capabilities = simsimd_cap_any_k;
-    if (static_capabilities != simsimd_cap_any_k) return static_capabilities;
+    static _Atomic(simsimd_capability_t) cached_capabilities = simsimd_cap_any_k;
+    simsimd_capability_t capabilities = cached_capabilities;
+    if (capabilities != simsimd_cap_any_k) return capabilities;
 
-    static_capabilities = _simsimd_capabilities_implementation();
+    capabilities = _simsimd_capabilities_implementation();
+    cached_capabilities = capabilities;
 
     // In multithreaded applications we need to ensure that the function pointers are pre-initialized,
     // so the first time we are probing for capabilities, we should also probe all of our metrics
@@ -377,7 +392,7 @@ SIMSIMD_DYNAMIC simsimd_capability_t simsimd_capabilities(void) {
     simsimd_fma_i8((simsimd_i8_t *)x, (simsimd_i8_t *)x, (simsimd_i8_t *)x, 0, 0, 0, (simsimd_i8_t *)x);
     simsimd_fma_u8((simsimd_u8_t *)x, (simsimd_u8_t *)x, (simsimd_u8_t *)x, 0, 0, 0, (simsimd_u8_t *)x);
 
-    return static_capabilities;
+    return capabilities;
 }
 
 SIMSIMD_DYNAMIC void simsimd_find_kernel_punned( //
