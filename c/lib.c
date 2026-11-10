@@ -77,12 +77,14 @@ extern "C" {
 // or the qNaN (0x7FF8000000000000).
 //
 // cached_metric is _Atomic to prevent a data race on lazy initialization.
+// Each dispatcher caches its kernel with its own exact type: calling the kernel through a punned type fails Clang CFI
+// (`cfi-icall`).
 #define SIMSIMD_DECLARATION_DENSE(name, extension)                                                                    \
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(simsimd_##extension##_t const *a,                               \
                                                       simsimd_##extension##_t const *b, simsimd_size_t n,             \
                                                       simsimd_distance_t *results) {                                  \
-        static _Atomic(simsimd_metric_dense_punned_t) cached_metric = 0;                                              \
-        simsimd_metric_dense_punned_t metric = cached_metric;                                                         \
+        static _Atomic(__typeof__(&simsimd_##name##_##extension)) cached_metric = 0;                                  \
+        __typeof__(&simsimd_##name##_##extension) metric = cached_metric;                                             \
         if (metric == 0) {                                                                                            \
             simsimd_capability_t used_capability;                                                                     \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,                   \
@@ -102,8 +104,8 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(simsimd_##type##_t const *a, simsimd_##type##_t const *b, \
                                                       simsimd_size_t a_length, simsimd_size_t b_length,         \
                                                       simsimd_distance_t *result) {                             \
-        static _Atomic(simsimd_metric_sparse_punned_t) cached_metric = 0;                                       \
-        simsimd_metric_sparse_punned_t metric = cached_metric;                                                   \
+        static _Atomic(__typeof__(&simsimd_##name##_##extension)) cached_metric = 0;                            \
+        __typeof__(&simsimd_##name##_##extension) metric = cached_metric;                                       \
         if (metric == 0) {                                                                                      \
             simsimd_capability_t used_capability;                                                               \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,             \
@@ -123,8 +125,8 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                                        \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_##extension##_t const *c, \
         simsimd_size_t n, simsimd_distance_t *result) {                                                       \
-        static _Atomic(simsimd_metric_curved_punned_t) cached_metric = 0;                                     \
-        simsimd_metric_curved_punned_t metric = cached_metric;                                                \
+        static _Atomic(__typeof__(&simsimd_##name##_##extension)) cached_metric = 0;                          \
+        __typeof__(&simsimd_##name##_##extension) metric = cached_metric;                                     \
         if (metric == 0) {                                                                                    \
             simsimd_capability_t used_capability;                                                             \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,           \
@@ -144,8 +146,8 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                                          \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_##extension##_t const *c,   \
         simsimd_size_t n, simsimd_distance_t alpha, simsimd_distance_t beta, simsimd_##extension##_t *result) { \
-        static _Atomic(simsimd_kernel_fma_punned_t) cached_metric = 0;                                          \
-        simsimd_kernel_fma_punned_t metric = cached_metric;                                                     \
+        static _Atomic(__typeof__(&simsimd_##name##_##extension)) cached_metric = 0;                            \
+        __typeof__(&simsimd_##name##_##extension) metric = cached_metric;                                       \
         if (metric == 0) {                                                                                      \
             simsimd_capability_t used_capability;                                                               \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k,             \
@@ -161,8 +163,8 @@ extern "C" {
     SIMSIMD_DYNAMIC void simsimd_##name##_##extension(                                              \
         simsimd_##extension##_t const *a, simsimd_##extension##_t const *b, simsimd_size_t n,       \
         simsimd_distance_t alpha, simsimd_distance_t beta, simsimd_##extension##_t *result) {       \
-        static _Atomic(simsimd_kernel_wsum_punned_t) cached_metric = 0;                             \
-        simsimd_kernel_wsum_punned_t metric = cached_metric;                                        \
+        static _Atomic(__typeof__(&simsimd_##name##_##extension)) cached_metric = 0;                \
+        __typeof__(&simsimd_##name##_##extension) metric = cached_metric;                           \
         if (metric == 0) {                                                                          \
             simsimd_capability_t used_capability;                                                   \
             simsimd_find_kernel_punned(simsimd_metric_##name##_k, simsimd_datatype_##extension##_k, \
