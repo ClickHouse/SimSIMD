@@ -1292,8 +1292,8 @@ SIMSIMD_PUBLIC void simsimd_spdot_counts_u16_sve2(                  //
 
 #if SIMSIMD_TARGET_SVE2 && SIMSIMD_TARGET_SVE_BF16
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.6-a+sve+sve2+bf16")
-#pragma clang attribute push(__attribute__((target("arch=armv8.6-a+sve+sve2+bf16"))), apply_to = function)
+#pragma GCC target("arch=armv8.6-a+sve+sve2+bf16,branch-protection=none")
+#pragma clang attribute push(__attribute__((target("arch=armv8.6-a+sve+sve2+bf16,branch-protection=none"))), apply_to = function)
 
 SIMSIMD_PUBLIC void simsimd_spdot_weights_u16_sve2(                   //
     simsimd_u16_t const *a, simsimd_u16_t const *b,                   //
