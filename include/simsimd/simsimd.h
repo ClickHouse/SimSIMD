@@ -469,11 +469,12 @@ SIMSIMD_PUBLIC simsimd_capability_t _simsimd_capabilities_x86(void) {
 
 /*  Compiling the next section one may get: selected processor does not support system register name 'id_aa64zfr0_el1'.
  *  Suppressing assembler errors is very complicated, so when dealing with older ARM CPUs it's simpler to compile this
- *  function targeting newer ones.
+ *  function targeting newer ones. Keep the base at Armv8.2: this probe runs on every CPU, and with
+ *  `-mbranch-protection=pac-ret` an Armv8.3+ target returns via `retaa`, which is SIGILL without FEAT_PAuth.
  */
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.5-a+sve")
-#pragma clang attribute push(__attribute__((target("arch=armv8.5-a+sve"))), apply_to = function)
+#pragma GCC target("arch=armv8.2-a+sve")
+#pragma clang attribute push(__attribute__((target("arch=armv8.2-a+sve"))), apply_to = function)
 
 #if _SIMSIMD_HAS_POSIX_EXTENSIONS
 /** @brief SIGILL handler for `mrs` instruction testing on Linux ARM */
