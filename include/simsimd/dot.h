@@ -525,8 +525,8 @@ SIMSIMD_PUBLIC void simsimd_vdot_f16c_neon(simsimd_f16c_t const *a_pairs, simsim
 
 #if SIMSIMD_TARGET_NEON_BF16
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.6-a+simd+bf16,branch-protection=none")
-#pragma clang attribute push(__attribute__((target("arch=armv8.6-a+simd+bf16,branch-protection=none"))), apply_to = function)
+#pragma GCC target("+simd+bf16")
+#pragma clang attribute push(__attribute__((target("+simd+bf16"))), apply_to = function)
 
 SIMSIMD_INTERNAL bfloat16x8_t _simsimd_partial_load_bf16x8_neon(simsimd_bf16_t const *x, simsimd_size_t n) {
     union {

@@ -467,19 +467,6 @@ SIMSIMD_PUBLIC simsimd_capability_t _simsimd_capabilities_x86(void) {
 
 #if _SIMSIMD_TARGET_ARM
 
-/*  Compiling the next section one may get: selected processor does not support system register name 'id_aa64zfr0_el1'.
- *  Suppressing assembler errors is very complicated, so when dealing with older ARM CPUs it's simpler to compile this
- *  function targeting newer ones.
- *
- *  `branch-protection=none` here and on every other target of ARMv8.3 or later: such a target has `FEAT_PAuth`, so
- *  under `-mbranch-protection=pac-ret` the compiler folds `autiasp; ret` into `retaa`, which, unlike `autiasp`, is not
- *  a `NOP` on older cores and raises SIGILL there - in this probe, before anything is dispatched. Code for ARMv8.2 and
- *  older keeps the signing, and its attributes must match the callers' for (Thin)LTO to inline it.
- */
-#pragma GCC push_options
-#pragma GCC target("arch=armv8.5-a+sve,branch-protection=none")
-#pragma clang attribute push(__attribute__((target("arch=armv8.5-a+sve,branch-protection=none"))), apply_to = function)
-
 #if _SIMSIMD_HAS_POSIX_EXTENSIONS
 /** @brief SIGILL handler for `mrs` instruction testing on Linux ARM */
 static sigjmp_buf _simsimd_mrs_test_jump_buffer;
@@ -601,7 +588,8 @@ SIMSIMD_PUBLIC simsimd_capability_t _simsimd_capabilities_arm(void) {
 
     // Now let's unpack the status flags from ID_AA64ZFR0_EL1
     // https://developer.arm.com/documentation/ddi0601/2024-03/AArch64-Registers/ID-AA64ZFR0-EL1--SVE-Feature-ID-Register-0?lang=en
-    if (supports_sve) __asm__ __volatile__("mrs %0, ID_AA64ZFR0_EL1" : "=r"(id_aa64zfr0_el1));
+    // `ID_AA64ZFR0_EL1` by its encoding, so that the assembler accepts it without SVE enabled.
+    if (supports_sve) __asm__ __volatile__("mrs %0, S3_0_C0_C4_4" : "=r"(id_aa64zfr0_el1));
     // I8MM, bits [47:44] of ID_AA64ZFR0_EL1
     unsigned supports_sve_i8mm = ((id_aa64zfr0_el1 >> 44) & 0xF) >= 1;
     // BF16, bits [23:20] of ID_AA64ZFR0_EL1
@@ -653,9 +641,6 @@ SIMSIMD_PUBLIC simsimd_capability_t _simsimd_capabilities_arm(void) {
 
 #endif
 }
-
-#pragma clang attribute pop
-#pragma GCC pop_options
 
 #endif
 
