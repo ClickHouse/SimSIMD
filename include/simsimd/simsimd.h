@@ -471,14 +471,17 @@ SIMSIMD_PUBLIC simsimd_capability_t _simsimd_capabilities_x86(void) {
  *  Suppressing assembler errors is very complicated, so when dealing with older ARM CPUs it's simpler to compile this
  *  function targeting newer ones.
  *
- *  `branch-protection=none` here and on every other target of ARMv8.3 or later: such a target has `FEAT_PAuth`, so
+ *  `branch-protection=bti` here and on every other target of ARMv8.3 or later: such a target has `FEAT_PAuth`, so
  *  under `-mbranch-protection=pac-ret` the compiler folds `autiasp; ret` into `retaa`, which, unlike `autiasp`, is not
  *  a `NOP` on older cores and raises SIGILL there - in this probe, before anything is dispatched. Code for ARMv8.2 and
  *  older keeps the signing, and its attributes must match the callers' for (Thin)LTO to inline it.
+ *  It is `bti` rather than `none`, because the kernels are called through the dispatch table: in an executable with
+ *  the BTI property, a function without the `bti c` landing pad raises SIGILL when called through a pointer. `bti c`
+ *  is in the `NOP` space too.
  */
 #pragma GCC push_options
-#pragma GCC target("arch=armv8.5-a+sve,branch-protection=none")
-#pragma clang attribute push(__attribute__((target("arch=armv8.5-a+sve,branch-protection=none"))), apply_to = function)
+#pragma GCC target("arch=armv8.5-a+sve,branch-protection=bti")
+#pragma clang attribute push(__attribute__((target("arch=armv8.5-a+sve,branch-protection=bti"))), apply_to = function)
 
 #if _SIMSIMD_HAS_POSIX_EXTENSIONS
 /** @brief SIGILL handler for `mrs` instruction testing on Linux ARM */
